@@ -23,6 +23,7 @@ final class AppState {
     private let bingService = BingWallpaperService()
     private let wallpaperService = WallpaperService()
     private var refreshTask: Task<Void, Never>?
+    private var refreshGeneration = 0
     private var timer: Timer?
     private var wakeObserver: NSObjectProtocol?
     private var didStart = false
@@ -47,8 +48,10 @@ final class AppState {
     func stop() {
         timer?.invalidate()
         timer = nil
+        refreshGeneration += 1
         refreshTask?.cancel()
         refreshTask = nil
+        isRefreshing = false
         if let wakeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
             self.wakeObserver = nil
@@ -58,8 +61,10 @@ final class AppState {
 
     func refresh(force: Bool) {
         refreshTask?.cancel()
+        refreshGeneration += 1
+        let generation = refreshGeneration
         refreshTask = Task {
-            await performRefresh(force: force)
+            await performRefresh(force: force, generation: generation)
         }
     }
 
@@ -80,25 +85,33 @@ final class AppState {
         NSWorkspace.shared.open(url)
     }
 
-    private func performRefresh(force: Bool) async {
+    private func performRefresh(force: Bool, generation: Int) async {
         isRefreshing = true
         lastError = nil
         statusMessage = "Fetching Bing wallpaper…"
 
+        defer {
+            if generation == refreshGeneration {
+                isRefreshing = false
+            }
+        }
+
         do {
             let image = try await bingService.fetchToday()
+            guard generation == refreshGeneration else { return }
+
             currentImage = image
 
             let lastHash = UserDefaults.standard.string(forKey: DefaultsKey.lastAppliedHash)
             if !force, lastHash == image.hsh {
                 statusMessage = "Already up to date"
-                isRefreshing = false
                 return
             }
 
             statusMessage = "Downloading…"
             let fileURL = wallpaperService.localFileURL(for: image)
             try await bingService.download(image, to: fileURL)
+            guard generation == refreshGeneration else { return }
 
             statusMessage = "Setting wallpaper…"
             try wallpaperService.setDesktopImage(at: fileURL)
@@ -107,14 +120,18 @@ final class AppState {
             UserDefaults.standard.set(image.startdate, forKey: DefaultsKey.lastAppliedDate)
 
             statusMessage = "Updated · \(image.displayDate)"
-        } catch is CancellationError {
-            statusMessage = "Cancelled"
         } catch {
+            guard generation == refreshGeneration, !Self.isCancellation(error) else { return }
             lastError = error.localizedDescription
             statusMessage = "Update failed"
         }
+    }
 
-        isRefreshing = false
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
     }
 
     private func startScheduler() {

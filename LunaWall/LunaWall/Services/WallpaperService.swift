@@ -23,7 +23,20 @@ struct WallpaperService {
     }
 
     func localFileURL(for image: BingImage) -> URL {
-        storageDirectory.appendingPathComponent("\(image.startdate)-\(image.hsh).jpg")
+        let startdate = Self.sanitizePathComponent(image.startdate)
+        let hash = Self.sanitizePathComponent(image.hsh)
+        return storageDirectory.appendingPathComponent("\(startdate)-\(hash).jpg")
+    }
+
+    /// Keep wallpaper filenames inside `storageDirectory` even if archive fields are hostile.
+    private static func sanitizePathComponent(_ value: String) -> String {
+        let filtered = String(value.map { character -> Character in
+            if character.isLetter || character.isNumber || character == "-" || character == "_" {
+                return character
+            }
+            return "_"
+        })
+        return filtered.isEmpty ? "unknown" : filtered
     }
 
     @MainActor

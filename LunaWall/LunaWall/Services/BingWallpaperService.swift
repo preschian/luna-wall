@@ -3,6 +3,7 @@ import Foundation
 enum BingWallpaperError: LocalizedError {
     case invalidResponse
     case emptyArchive
+    case invalidImageURL
     case downloadFailed
 
     var errorDescription: String? {
@@ -11,6 +12,8 @@ enum BingWallpaperError: LocalizedError {
             return "Bing returned an invalid response."
         case .emptyArchive:
             return "No Bing wallpaper is available right now."
+        case .invalidImageURL:
+            return "Bing returned an unsafe or invalid image URL."
         case .downloadFailed:
             return "Failed to download the wallpaper image."
         }
@@ -60,7 +63,11 @@ struct BingWallpaperService {
     }
 
     func download(_ image: BingImage, to destination: URL) async throws {
-        let (tempURL, response) = try await session.download(from: image.wallpaperURL)
+        guard let wallpaperURL = image.wallpaperURL else {
+            throw BingWallpaperError.invalidImageURL
+        }
+
+        let (tempURL, response) = try await session.download(from: wallpaperURL)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw BingWallpaperError.downloadFailed
         }
