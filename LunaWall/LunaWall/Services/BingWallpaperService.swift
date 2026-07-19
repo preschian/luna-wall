@@ -20,7 +20,7 @@ enum BingWallpaperError: LocalizedError {
     }
 }
 
-struct BingWallpaperService {
+struct BingWallpaperService: Sendable {
     private let session: URLSession
 
     init(session: URLSession = .shared) {
@@ -75,13 +75,29 @@ struct BingWallpaperService {
         let directory = destination.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        if FileManager.default.fileExists(atPath: destination.path) {
-            try FileManager.default.removeItem(at: destination)
+        // Stage into the destination directory, then replace atomically to avoid cancel races.
+        let staged = directory.appendingPathComponent(UUID().uuidString + ".download")
+        if FileManager.default.fileExists(atPath: staged.path) {
+            try FileManager.default.removeItem(at: staged)
         }
-        try FileManager.default.moveItem(at: tempURL, to: destination)
+        try FileManager.default.moveItem(at: tempURL, to: staged)
+
+        do {
+            if FileManager.default.fileExists(atPath: destination.path) {
+                _ = try FileManager.default.replaceItemAt(destination, withItemAt: staged)
+            } else {
+                try FileManager.default.moveItem(at: staged, to: destination)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: staged)
+            throw error
+        }
     }
 
     private var preferredMarket: String {
-        Locale.current.identifier.replacingOccurrences(of: "_", with: "-")
+        let identifier = Locale.current.identifier
+        let primary = identifier.split(separator: "@", maxSplits: 1, omittingEmptySubsequences: true).first
+            .map(String.init) ?? identifier
+        return primary.replacingOccurrences(of: "_", with: "-")
     }
 }

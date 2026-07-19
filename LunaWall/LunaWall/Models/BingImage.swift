@@ -62,6 +62,21 @@ struct BingImage: Decodable, Identifiable, Sendable, Equatable {
         return formatter.string(from: date)
     }
 
+    /// Some markets return a generic `title` like "Info"; prefer a useful caption for the UI.
+    var displayTitle: String {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTitle.isEmpty, trimmedTitle.caseInsensitiveCompare("Info") != .orderedSame {
+            return trimmedTitle
+        }
+        let copyrightTitle = copyright.split(separator: "(", maxSplits: 1, omittingEmptySubsequences: true)
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if let copyrightTitle, !copyrightTitle.isEmpty {
+            return copyrightTitle
+        }
+        return trimmedTitle
+    }
+
     private static func isBingHost(_ host: String) -> Bool {
         host == "bing.com" || host.hasSuffix(".bing.com")
     }
