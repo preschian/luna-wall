@@ -9,6 +9,10 @@ struct MenuBarView: View {
             header
             Divider()
             details
+            if !appState.recentImages.isEmpty {
+                Divider()
+                recentHistory
+            }
             Divider()
             controls
             if let error = appState.lastError {
@@ -50,15 +54,79 @@ struct MenuBarView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(image.displayDate)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                HStack(spacing: 6) {
+                    Text(image.displayDate)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    if appState.isPinned {
+                        Text("Pinned")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.orange)
+                    }
+                }
             }
         } else {
             Text("No wallpaper loaded yet.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var recentHistory: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Recent")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(appState.recentImages) { image in
+                        historyRow(for: image)
+                    }
+                }
+            }
+            .frame(maxHeight: 180)
+
+            if appState.isPinned {
+                Button {
+                    appState.followToday()
+                } label: {
+                    Label("Follow Today", systemImage: "sun.max")
+                }
+                .disabled(appState.isRefreshing)
+            }
+        }
+    }
+
+    private func historyRow(for image: BingImage) -> some View {
+        let isCurrent = appState.currentImage?.hsh == image.hsh
+        return Button {
+            appState.applyImage(image)
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(image.title)
+                        .font(.caption.weight(isCurrent ? .semibold : .regular))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    Text(image.displayDate)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                if isCurrent {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(appState.isRefreshing || isCurrent)
     }
 
     private var controls: some View {

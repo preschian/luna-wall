@@ -5,10 +5,13 @@ Simple native macOS menu bar app that sets your desktop wallpaper to Bing’s ph
 ## Features
 
 - Fetches today’s Bing wallpaper in UHD
+- Browse and apply recent Bing wallpapers (last 8 days)
 - Applies it automatically to every connected display
 - Auto-checks every 30 minutes (and after wake from sleep)
+- Pin a past day to keep it; otherwise auto-refresh follows today
 - Optional launch at login
-- Menu bar UI with title, copyright, and manual refresh
+- Menu bar UI with title, copyright, history, and manual refresh
+- Caches downloaded images under Application Support
 
 ## Contributing
 
