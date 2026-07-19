@@ -71,24 +71,25 @@ final class AppState {
         didStart = false
     }
 
-    /// Fetches recent images and, unless pinned, applies today’s wallpaper.
+    /// Fetches recent images and applies the pinned day, or today’s wallpaper when unpinned.
     func refresh(force: Bool) {
         beginOperation { generation in
-            await self.performRefresh(force: force, generation: generation)
+            await self.performRefresh(force: force, preferToday: false, generation: generation)
         }
     }
 
     /// Applies a specific archive image. Pins past days so auto-refresh won’t replace them.
     func applyImage(_ image: BingImage) {
         beginOperation { generation in
-            await self.performApply(image, pinIfNotToday: true, generation: generation)
+            await self.performApplySelected(image, generation: generation)
         }
     }
 
-    /// Clears a manual pin and resumes following today’s Bing image.
+    /// Resumes following today’s Bing image. Clears the pin only after today applies successfully.
     func followToday() {
-        pinnedHash = nil
-        refresh(force: true)
+        beginOperation { generation in
+            await self.performRefresh(force: true, preferToday: true, generation: generation)
+        }
     }
 
     func toggleLaunchAtLogin(_ enabled: Bool) {
@@ -124,7 +125,7 @@ final class AppState {
         }
     }
 
-    private func performRefresh(force: Bool, generation: Int) async {
+    private func performRefresh(force: Bool, preferToday: Bool, generation: Int) async {
         statusMessage = "Fetching Bing wallpaper…"
 
         do {
@@ -136,36 +137,28 @@ final class AppState {
                 throw BingWallpaperError.emptyArchive
             }
 
-            if let pinnedHash,
-               let pinned = images.first(where: { $0.hsh == pinnedHash }) {
-                currentImage = pinned
-                let lastHash = UserDefaults.standard.string(forKey: DefaultsKey.lastAppliedHash)
-                let fileURL = wallpaperService.localFileURL(for: pinned)
-                let needsApply = force
-                    || lastHash != pinned.hsh
-                    || !FileManager.default.fileExists(atPath: fileURL.path)
-                if needsApply {
-                    await performApply(pinned, pinIfNotToday: true, generation: generation)
-                } else {
-                    statusMessage = "Pinned · \(pinned.displayDate)"
-                }
-                return
-            }
-
-            // Pin no longer in the recent window (or was cleared) — follow today.
-            if pinnedHash != nil {
-                self.pinnedHash = nil
-            }
-
-            currentImage = today
+            let pinnedImage: BingImage? = {
+                guard !preferToday, let hash = pinnedHash else { return nil }
+                return images.first(where: { $0.hsh == hash })
+            }()
+            let target = pinnedImage ?? today
 
             let lastHash = UserDefaults.standard.string(forKey: DefaultsKey.lastAppliedHash)
-            if !force, lastHash == today.hsh {
-                statusMessage = "Already up to date"
+            let fileURL = wallpaperService.localFileURL(for: target)
+            let cachePresent = FileManager.default.fileExists(atPath: fileURL.path)
+            if !force, lastHash == target.hsh, cachePresent {
+                currentImage = target
+                // Drop an expired pin (or follow-today noop) only once we know today is already applied.
+                if target.hsh == today.hsh {
+                    pinnedHash = nil
+                }
+                statusMessage = pinnedHash == nil
+                    ? "Already up to date"
+                    : "Pinned · \(target.displayDate)"
                 return
             }
 
-            await performApply(today, pinIfNotToday: false, generation: generation)
+            await performApply(target, today: today, generation: generation)
         } catch {
             guard generation == operationGeneration, !Self.isCancellation(error) else { return }
             lastError = error.localizedDescription
@@ -173,7 +166,30 @@ final class AppState {
         }
     }
 
-    private func performApply(_ image: BingImage, pinIfNotToday: Bool, generation: Int) async {
+    private func performApplySelected(_ image: BingImage, generation: Int) async {
+        do {
+            let today: BingImage
+            if let knownToday = recentImages.first {
+                today = knownToday
+            } else {
+                statusMessage = "Fetching Bing wallpaper…"
+                let images = try await bingService.fetchImages(count: Self.historyCount)
+                guard generation == operationGeneration else { return }
+                recentImages = images
+                guard let first = images.first else {
+                    throw BingWallpaperError.emptyArchive
+                }
+                today = first
+            }
+            await performApply(image, today: today, generation: generation)
+        } catch {
+            guard generation == operationGeneration, !Self.isCancellation(error) else { return }
+            lastError = error.localizedDescription
+            statusMessage = "Update failed"
+        }
+    }
+
+    private func performApply(_ image: BingImage, today: BingImage, generation: Int) async {
         do {
             let fileURL = wallpaperService.localFileURL(for: image)
             if !FileManager.default.fileExists(atPath: fileURL.path) {
@@ -190,13 +206,12 @@ final class AppState {
             UserDefaults.standard.set(image.hsh, forKey: DefaultsKey.lastAppliedHash)
             UserDefaults.standard.set(image.startdate, forKey: DefaultsKey.lastAppliedDate)
 
-            let todayHash = recentImages.first?.hsh
-            if pinIfNotToday, let todayHash, image.hsh != todayHash {
-                pinnedHash = image.hsh
-                statusMessage = "Pinned · \(image.displayDate)"
-            } else {
+            if image.hsh == today.hsh {
                 pinnedHash = nil
                 statusMessage = "Updated · \(image.displayDate)"
+            } else {
+                pinnedHash = image.hsh
+                statusMessage = "Pinned · \(image.displayDate)"
             }
         } catch {
             guard generation == operationGeneration, !Self.isCancellation(error) else { return }
