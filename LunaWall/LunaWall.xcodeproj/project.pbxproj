@@ -1,0 +1,358 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		262F330CF7C7181767FC062F /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */; };
+		694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DB8612458EAEE386E83D97 /* MenuBarView.swift */; };
+		6A018ECC901E9E8A0F1A6AF1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DFC80869CF29F80ACBF12CC /* Assets.xcassets */; };
+		6CD383E0C86A0AB47C844CAD /* BingImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3ABF40D188DA16D15783D2B /* BingImage.swift */; };
+		75BA62A156A85C2C28C1EA4F /* WallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B856D0455FED9A53B909469 /* WallpaperService.swift */; };
+		9CBA7CE070465E76EFBAB8A8 /* LunaWallApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E195EDCB960A326D56836B0D /* LunaWallApp.swift */; };
+		AF1C9013BA04C7B3073EC6FD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28BC1CCAD2811BAE153FB2D /* AppDelegate.swift */; };
+		DB28F8109A2AAAF7FD037C30 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01365E7BEA105CBCE3735177 /* AppState.swift */; };
+		F5DF11F1BB3A6B2457C001C0 /* BingWallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE63297ECCDF90A9E8008DFE /* BingWallpaperService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01365E7BEA105CBCE3735177 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		15DB8612458EAEE386E83D97 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		1DFC80869CF29F80ACBF12CC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
+		5B856D0455FED9A53B909469 /* WallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperService.swift; sourceTree = "<group>"; };
+		6CDE754DFF3BC0E7EC411C8D /* LunaWall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LunaWall.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D28BC1CCAD2811BAE153FB2D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		DE63297ECCDF90A9E8008DFE /* BingWallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BingWallpaperService.swift; sourceTree = "<group>"; };
+		E195EDCB960A326D56836B0D /* LunaWallApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunaWallApp.swift; sourceTree = "<group>"; };
+		E3ABF40D188DA16D15783D2B /* BingImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BingImage.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		32708750599B7C588ECC1BFD = {
+			isa = PBXGroup;
+			children = (
+				7E260F48124EC54750231CF4 /* LunaWall */,
+				3A439E98CA7F0AFE22D27500 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3A439E98CA7F0AFE22D27500 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6CDE754DFF3BC0E7EC411C8D /* LunaWall.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6629EE4232B8E518BC5931C6 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E3ABF40D188DA16D15783D2B /* BingImage.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		7E260F48124EC54750231CF4 /* LunaWall */ = {
+			isa = PBXGroup;
+			children = (
+				D28BC1CCAD2811BAE153FB2D /* AppDelegate.swift */,
+				01365E7BEA105CBCE3735177 /* AppState.swift */,
+				1DFC80869CF29F80ACBF12CC /* Assets.xcassets */,
+				E195EDCB960A326D56836B0D /* LunaWallApp.swift */,
+				6629EE4232B8E518BC5931C6 /* Models */,
+				B4813B87A6ECAC367F355778 /* Services */,
+				D3A3507E4D6D3CDE7F11A810 /* Views */,
+			);
+			path = LunaWall;
+			sourceTree = "<group>";
+		};
+		B4813B87A6ECAC367F355778 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DE63297ECCDF90A9E8008DFE /* BingWallpaperService.swift */,
+				4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */,
+				5B856D0455FED9A53B909469 /* WallpaperService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D3A3507E4D6D3CDE7F11A810 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				15DB8612458EAEE386E83D97 /* MenuBarView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C16583F3AC06DBBA715C65F0 /* LunaWall */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9FD2388DD3D8F0F4E9E7B62D /* Build configuration list for PBXNativeTarget "LunaWall" */;
+			buildPhases = (
+				E555002175C6F7E46A17B619 /* Sources */,
+				DABA3743373B070B9BFCE8EC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LunaWall;
+			packageProductDependencies = (
+			);
+			productName = LunaWall;
+			productReference = 6CDE754DFF3BC0E7EC411C8D /* LunaWall.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5DB1DCE9625BCF4C9088634D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					C16583F3AC06DBBA715C65F0 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 641940B350624E531E3E6249 /* Build configuration list for PBXProject "LunaWall" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 32708750599B7C588ECC1BFD;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3A439E98CA7F0AFE22D27500 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C16583F3AC06DBBA715C65F0 /* LunaWall */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DABA3743373B070B9BFCE8EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A018ECC901E9E8A0F1A6AF1 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E555002175C6F7E46A17B619 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF1C9013BA04C7B3073EC6FD /* AppDelegate.swift in Sources */,
+				DB28F8109A2AAAF7FD037C30 /* AppState.swift in Sources */,
+				6CD383E0C86A0AB47C844CAD /* BingImage.swift in Sources */,
+				F5DF11F1BB3A6B2457C001C0 /* BingWallpaperService.swift in Sources */,
+				262F330CF7C7181767FC062F /* LaunchAtLoginService.swift in Sources */,
+				9CBA7CE070465E76EFBAB8A8 /* LunaWallApp.swift in Sources */,
+				694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */,
+				75BA62A156A85C2C28C1EA4F /* WallpaperService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0CBFEC4305880FBBB38F6288 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		36A0B2470A4068371CB6E8AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LunaWall/LunaWall.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LunaWall/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.lunawall.LunaWall;
+				PRODUCT_NAME = LunaWall;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Release;
+		};
+		B59CF881C6DBFC40CEDAE558 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		EF5E12BD7C87461ADE4D88A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LunaWall/LunaWall.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LunaWall/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.lunawall.LunaWall;
+				PRODUCT_NAME = LunaWall;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		641940B350624E531E3E6249 /* Build configuration list for PBXProject "LunaWall" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B59CF881C6DBFC40CEDAE558 /* Debug */,
+				0CBFEC4305880FBBB38F6288 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9FD2388DD3D8F0F4E9E7B62D /* Build configuration list for PBXNativeTarget "LunaWall" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EF5E12BD7C87461ADE4D88A6 /* Debug */,
+				36A0B2470A4068371CB6E8AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5DB1DCE9625BCF4C9088634D /* Project object */;
+}
