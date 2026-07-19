@@ -6,62 +6,25 @@ struct LunaWallApp: App {
 
     var body: some Scene {
         MenuBarExtra("LunaWall", systemImage: "photo.on.rectangle.angled") {
+            // Temporary MenuBarExtra adaptor — see github.com/preschian/luna-wall/issues/6.
             MenuBarExtraContent(appState: AppDelegate.sharedState)
         }
         .menuBarExtraStyle(.window)
     }
 }
 
-/// MenuBarExtra often fails to refresh @Observable trees; ObservedObject + local snapshot is reliable.
+/// Forces MenuBarExtra to redraw on @Published changes without polling or re-entrancy.
 private struct MenuBarExtraContent: View {
     @ObservedObject var appState: AppState
-    @State private var snapshot = MenuSnapshot()
+    @State private var redrawToken = 0
 
     var body: some View {
-        MenuBarView(appState: appState, snapshot: snapshot)
-            .onAppear(perform: syncSnapshot)
+        MenuBarView(appState: appState)
+            .id(redrawToken)
             .onReceive(appState.objectWillChange) { _ in
-                // Defer so @Published values are committed before we copy them.
-                DispatchQueue.main.async(execute: syncSnapshot)
-            }
-            .task {
-                // MenuBarExtra can drop Combine invalidations; poll lightly while open.
-                while !Task.isCancelled {
-                    syncSnapshot()
-                    try? await Task.sleep(for: .milliseconds(400))
+                DispatchQueue.main.async {
+                    redrawToken &+= 1
                 }
             }
     }
-
-    private func syncSnapshot() {
-        let next = MenuSnapshot(
-            recentImages: appState.recentImages,
-            currentImage: appState.currentImage,
-            libraryRevision: appState.libraryRevision,
-            statusMessage: appState.statusMessage,
-            isRefreshing: appState.isRefreshing,
-            lastError: appState.lastError,
-            isPinned: appState.isPinned,
-            autoRefreshEnabled: appState.autoRefreshEnabled,
-            launchAtLoginEnabled: appState.launchAtLoginEnabled
-        )
-        if next != snapshot {
-            snapshot = next
-        }
-        if appState.recentImages.isEmpty, !appState.isRefreshing {
-            appState.refresh(force: false)
-        }
-    }
-}
-
-struct MenuSnapshot: Equatable {
-    var recentImages: [BingImage] = []
-    var currentImage: BingImage?
-    var libraryRevision = 0
-    var statusMessage = "Ready"
-    var isRefreshing = false
-    var lastError: String?
-    var isPinned = false
-    var autoRefreshEnabled = true
-    var launchAtLoginEnabled = false
 }

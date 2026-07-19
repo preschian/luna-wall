@@ -1,6 +1,6 @@
 import AppKit
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 final class AppState: ObservableObject {
@@ -11,15 +11,20 @@ final class AppState: ObservableObject {
         static let pinnedHash = "pinnedHash"
     }
 
+    private enum TargetPolicy: Sendable {
+        case followPin
+        case forceToday
+        case exact(BingImage)
+    }
+
     /// Number of recent Bing days to fetch (API caps at 8).
     static let historyCount = 8
 
     @Published var currentImage: BingImage?
     @Published var recentImages: [BingImage] = []
-    /// Bumped when cached library files change so thumbnails reload.
-    @Published var libraryRevision = 0
     @Published var statusMessage = "Ready"
     @Published var isRefreshing = false
+    @Published var isWarmingLibrary = false
     @Published var lastError: String?
     @Published var autoRefreshEnabled: Bool {
         didSet { UserDefaults.standard.set(autoRefreshEnabled, forKey: DefaultsKey.autoRefreshEnabled) }
@@ -35,10 +40,14 @@ final class AppState: ObservableObject {
     private let bingService = BingWallpaperService()
     private let wallpaperService = WallpaperService()
     private var operationTask: Task<Void, Never>?
+    private var libraryTask: Task<Void, Never>?
     private var operationGeneration = 0
+    private var libraryGeneration = 0
     private var timer: Timer?
     private var wakeObserver: NSObjectProtocol?
     private var didStart = false
+    private var consecutiveRefreshFailures = 0
+    private var earliestRetryAt: Date?
 
     init() {
         let defaults = UserDefaults.standard
@@ -62,9 +71,13 @@ final class AppState: ObservableObject {
         timer?.invalidate()
         timer = nil
         operationGeneration += 1
+        libraryGeneration += 1
         operationTask?.cancel()
         operationTask = nil
+        libraryTask?.cancel()
+        libraryTask = nil
         isRefreshing = false
+        isWarmingLibrary = false
         if let wakeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
             self.wakeObserver = nil
@@ -75,26 +88,30 @@ final class AppState: ObservableObject {
     /// Fetches recent images and applies the pinned day, or today’s wallpaper when unpinned.
     func refresh(force: Bool) {
         beginOperation { generation in
-            await self.performRefresh(force: force, preferToday: false, generation: generation)
+            await self.performOperation(force: force, policy: .followPin, generation: generation)
         }
     }
 
     /// Applies a specific archive image. Pins past days so auto-refresh won’t replace them.
     func applyImage(_ image: BingImage) {
         beginOperation { generation in
-            await self.performApplySelected(image, generation: generation)
+            await self.performOperation(force: true, policy: .exact(image), generation: generation)
         }
     }
 
     /// Resumes following today’s Bing image. Clears the pin only after today applies successfully.
     func followToday() {
         beginOperation { generation in
-            await self.performRefresh(force: true, preferToday: true, generation: generation)
+            await self.performOperation(force: true, policy: .forceToday, generation: generation)
         }
     }
 
     func fileURL(for image: BingImage) -> URL {
         wallpaperService.localFileURL(for: image)
+    }
+
+    func thumbnailURL(for image: BingImage) -> URL {
+        wallpaperService.thumbnailFileURL(for: image)
     }
 
     func toggleLaunchAtLogin(_ enabled: Bool) {
@@ -116,11 +133,14 @@ final class AppState: ObservableObject {
 
     private func beginOperation(_ work: @escaping @MainActor (Int) async -> Void) {
         operationTask?.cancel()
+        libraryTask?.cancel()
         operationGeneration += 1
+        libraryGeneration += 1
         let generation = operationGeneration
+        isRefreshing = true
+        isWarmingLibrary = false
+        lastError = nil
         operationTask = Task {
-            isRefreshing = true
-            lastError = nil
             defer {
                 if generation == operationGeneration {
                     isRefreshing = false
@@ -130,151 +150,179 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func performRefresh(force: Bool, preferToday: Bool, generation: Int) async {
+    private func performOperation(force: Bool, policy: TargetPolicy, generation: Int) async {
+        if !force, let earliestRetryAt, Date() < earliestRetryAt {
+            statusMessage = "Waiting to retry…"
+            return
+        }
+
         statusMessage = "Fetching Bing wallpaper…"
 
         do {
             let images = try await bingService.fetchImages(count: Self.historyCount)
             guard generation == operationGeneration else { return }
 
+            consecutiveRefreshFailures = 0
+            earliestRetryAt = nil
             recentImages = images
+
             guard let today = images.first else {
                 throw BingWallpaperError.emptyArchive
             }
 
-            await prefetchLibrary(images, generation: generation)
-            guard generation == operationGeneration else { return }
-
-            let pinnedImage: BingImage? = {
-                guard !preferToday, let hash = pinnedHash else { return nil }
-                return images.first(where: { $0.hsh == hash })
-            }()
-            let target = pinnedImage ?? today
-
+            let target = Self.resolveTarget(images: images, today: today, pinnedHash: pinnedHash, policy: policy)
             let lastHash = UserDefaults.standard.string(forKey: DefaultsKey.lastAppliedHash)
             let fileURL = wallpaperService.localFileURL(for: target)
             let cachePresent = FileManager.default.fileExists(atPath: fileURL.path)
+
             if !force, lastHash == target.hsh, cachePresent {
                 currentImage = target
-                // Drop an expired pin (or follow-today noop) only once we know today is already applied.
-                if target.hsh == today.hsh {
-                    pinnedHash = nil
-                }
+                applyPinPolicy(applied: target, today: today)
                 statusMessage = pinnedHash == nil
                     ? "Already up to date"
                     : "Pinned · \(target.displayDate)"
-                return
+            } else {
+                try await applyWallpaper(target, today: today, generation: generation)
             }
 
-            await performApply(target, today: today, generation: generation)
+            guard generation == operationGeneration else { return }
+            scheduleLibraryWarmup(images)
         } catch {
             guard generation == operationGeneration, !Self.isCancellation(error) else { return }
+            consecutiveRefreshFailures += 1
+            let delay = min(pow(2.0, Double(min(consecutiveRefreshFailures, 5))), 60)
+            earliestRetryAt = Date().addingTimeInterval(delay)
             lastError = error.localizedDescription
             statusMessage = "Update failed"
         }
     }
 
-    /// Downloads any missing recent wallpapers so the library and Recent list are fully populated.
-    private func prefetchLibrary(_ images: [BingImage], generation: Int) async {
+    private static func resolveTarget(
+        images: [BingImage],
+        today: BingImage,
+        pinnedHash: String?,
+        policy: TargetPolicy
+    ) -> BingImage {
+        switch policy {
+        case .forceToday:
+            return today
+        case .exact(let requested):
+            return images.first(where: { $0.hsh == requested.hsh }) ?? requested
+        case .followPin:
+            if let pinnedHash, let pinned = images.first(where: { $0.hsh == pinnedHash }) {
+                return pinned
+            }
+            return today
+        }
+    }
+
+    private func applyPinPolicy(applied: BingImage, today: BingImage) {
+        pinnedHash = applied.hsh == today.hsh ? nil : applied.hsh
+    }
+
+    private func applyWallpaper(_ image: BingImage, today: BingImage, generation: Int) async throws {
+        let fileURL = wallpaperService.localFileURL(for: image)
+        if !FileManager.default.fileExists(atPath: fileURL.path) {
+            statusMessage = "Downloading…"
+            try await bingService.download(image, to: fileURL)
+            guard generation == operationGeneration else { return }
+        }
+
+        statusMessage = "Setting wallpaper…"
+        try wallpaperService.setDesktopImage(at: fileURL)
+        guard generation == operationGeneration else { return }
+
+        currentImage = image
+        UserDefaults.standard.set(image.hsh, forKey: DefaultsKey.lastAppliedHash)
+        UserDefaults.standard.set(image.startdate, forKey: DefaultsKey.lastAppliedDate)
+        applyPinPolicy(applied: image, today: today)
+        statusMessage = pinnedHash == nil
+            ? "Updated · \(image.displayDate)"
+            : "Pinned · \(image.displayDate)"
+    }
+
+    /// Downloads missing archive images and thumbs after the desktop target is handled.
+    private func scheduleLibraryWarmup(_ images: [BingImage]) {
+        libraryTask?.cancel()
+        libraryGeneration += 1
+        let generation = libraryGeneration
+        libraryTask = Task {
+            await self.warmupLibrary(images, generation: generation)
+        }
+    }
+
+    private func warmupLibrary(_ images: [BingImage], generation: Int) async {
+        isWarmingLibrary = true
+        defer {
+            if generation == libraryGeneration {
+                isWarmingLibrary = false
+            }
+        }
+
         let pending = images.filter {
             !FileManager.default.fileExists(atPath: wallpaperService.localFileURL(for: $0).path)
         }
-        guard !pending.isEmpty else {
-            libraryRevision &+= 1
-            return
-        }
 
-        statusMessage = "Downloading library 0/\(pending.count)…"
-        var finished = 0
+        if !pending.isEmpty {
+            statusMessage = "Downloading library 0/\(pending.count)…"
+            var finished = 0
+            var failures = 0
 
-        await withTaskGroup(of: Bool.self) { group in
-            for image in pending {
-                let destination = wallpaperService.localFileURL(for: image)
-                let service = bingService
-                group.addTask {
-                    do {
-                        try await service.download(image, to: destination)
-                        return true
-                    } catch {
-                        return false
+            await withTaskGroup(of: Bool.self) { group in
+                for image in pending {
+                    let destination = wallpaperService.localFileURL(for: image)
+                    let service = bingService
+                    group.addTask {
+                        do {
+                            try await service.download(image, to: destination)
+                            return true
+                        } catch {
+                            return false
+                        }
                     }
                 }
+
+                for await success in group {
+                    guard generation == libraryGeneration else {
+                        group.cancelAll()
+                        return
+                    }
+                    if success {
+                        finished += 1
+                    } else {
+                        failures += 1
+                    }
+                    statusMessage = "Downloading library \(finished)/\(pending.count)…"
+                }
             }
 
-            for await success in group {
-                guard generation == operationGeneration else {
-                    group.cancelAll()
-                    return
-                }
-                if success {
-                    finished += 1
-                    libraryRevision &+= 1
-                }
-                statusMessage = "Downloading library \(finished)/\(pending.count)…"
+            if failures > 0, finished == 0 {
+                lastError = "Could not download the wallpaper library."
+            } else if failures > 0 {
+                lastError = "Some library downloads failed (\(failures))."
             }
         }
 
-        libraryRevision &+= 1
-    }
+        guard generation == libraryGeneration else { return }
 
-    private func performApplySelected(_ image: BingImage, generation: Int) async {
-        do {
-            let today: BingImage
-            if let knownToday = recentImages.first {
-                today = knownToday
-            } else {
-                statusMessage = "Fetching Bing wallpaper…"
-                let images = try await bingService.fetchImages(count: Self.historyCount)
-                guard generation == operationGeneration else { return }
-                recentImages = images
-                await prefetchLibrary(images, generation: generation)
-                guard generation == operationGeneration else { return }
-                guard let first = images.first else {
-                    throw BingWallpaperError.emptyArchive
-                }
-                today = first
-            }
-            await performApply(image, today: today, generation: generation)
-        } catch {
-            guard generation == operationGeneration, !Self.isCancellation(error) else { return }
-            lastError = error.localizedDescription
-            statusMessage = "Update failed"
+        for image in images {
+            guard generation == libraryGeneration else { return }
+            let source = wallpaperService.localFileURL(for: image)
+            let thumb = wallpaperService.thumbnailFileURL(for: image)
+            _ = await WallpaperService.loadThumbnailImage(source: source, destination: thumb)
+        }
+
+        guard generation == libraryGeneration else { return }
+        wallpaperService.evict(except: images)
+
+        if pinnedHash == nil {
+            statusMessage = currentImage.map { "Updated · \($0.displayDate)" } ?? "Ready"
+        } else if let currentImage {
+            statusMessage = "Pinned · \(currentImage.displayDate)"
         }
     }
 
-    private func performApply(_ image: BingImage, today: BingImage, generation: Int) async {
-        do {
-            let fileURL = wallpaperService.localFileURL(for: image)
-            if !FileManager.default.fileExists(atPath: fileURL.path) {
-                statusMessage = "Downloading…"
-                try await bingService.download(image, to: fileURL)
-                guard generation == operationGeneration else { return }
-                libraryRevision &+= 1
-            }
-
-            statusMessage = "Setting wallpaper…"
-            try wallpaperService.setDesktopImage(at: fileURL)
-            guard generation == operationGeneration else { return }
-
-            currentImage = image
-            UserDefaults.standard.set(image.hsh, forKey: DefaultsKey.lastAppliedHash)
-            UserDefaults.standard.set(image.startdate, forKey: DefaultsKey.lastAppliedDate)
-
-            if image.hsh == today.hsh {
-                pinnedHash = nil
-                statusMessage = "Updated · \(image.displayDate)"
-            } else {
-                pinnedHash = image.hsh
-                statusMessage = "Pinned · \(image.displayDate)"
-            }
-        } catch {
-            guard generation == operationGeneration, !Self.isCancellation(error) else { return }
-            lastError = error.localizedDescription
-            statusMessage = "Update failed"
-        }
-    }
-
-    private static func isCancellation(_ error: Error) -> Bool {
+    private nonisolated static func isCancellation(_ error: Error) -> Bool {
         if error is CancellationError { return true }
         if let urlError = error as? URLError, urlError.code == .cancelled { return true }
         let nsError = error as NSError
@@ -283,7 +331,6 @@ final class AppState: ObservableObject {
 
     private func startScheduler() {
         timer?.invalidate()
-        // Check periodically so a new Bing day is picked up without needing a restart.
         timer = Timer.scheduledTimer(withTimeInterval: 30 * 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.autoRefreshEnabled else { return }

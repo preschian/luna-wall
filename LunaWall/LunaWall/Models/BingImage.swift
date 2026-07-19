@@ -71,7 +71,10 @@ struct BingImage: Decodable, Identifiable, Sendable, Equatable {
         let copyrightTitle = copyright.split(separator: "(", maxSplits: 1, omittingEmptySubsequences: true)
             .first?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return (copyrightTitle?.isEmpty == false) ? copyrightTitle! : trimmedTitle
+        if let copyrightTitle, !copyrightTitle.isEmpty {
+            return copyrightTitle
+        }
+        return trimmedTitle
     }
 
     private static func isBingHost(_ host: String) -> Bool {

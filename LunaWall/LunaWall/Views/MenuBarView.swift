@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var appState: AppState
-    var snapshot: MenuSnapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -14,7 +13,7 @@ struct MenuBarView: View {
             recentHistory
             Divider()
             controls
-            if let error = snapshot.lastError {
+            if let error = appState.lastError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -30,12 +29,12 @@ struct MenuBarView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("LunaWall")
                     .font(.headline)
-                Text(snapshot.statusMessage)
+                Text(appState.statusMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if snapshot.isRefreshing {
+            if appState.isRefreshing || appState.isWarmingLibrary {
                 ProgressView()
                     .controlSize(.small)
             }
@@ -44,7 +43,7 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private var details: some View {
-        if let image = snapshot.currentImage {
+        if let image = appState.currentImage {
             VStack(alignment: .leading, spacing: 6) {
                 Text(image.displayTitle)
                     .font(.subheadline.weight(.semibold))
@@ -57,7 +56,7 @@ struct MenuBarView: View {
                     Text(image.displayDate)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                    if snapshot.isPinned {
+                    if appState.isPinned {
                         Text("Pinned")
                             .font(.caption2.weight(.medium))
                             .foregroundStyle(.orange)
@@ -77,17 +76,17 @@ struct MenuBarView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            if snapshot.recentImages.isEmpty {
-                Text(snapshot.isRefreshing ? "Loading…" : "No recent images yet.")
+            if appState.recentImages.isEmpty {
+                Text(appState.isRefreshing ? "Loading…" : "No recent images yet.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 // MenuBarExtra often collapses ScrollView when only maxHeight is set.
                 let rowHeight: CGFloat = 52
-                let listHeight = min(CGFloat(snapshot.recentImages.count) * rowHeight, 280)
+                let listHeight = min(CGFloat(appState.recentImages.count) * rowHeight, 280)
                 ScrollView {
                     VStack(spacing: 4) {
-                        ForEach(snapshot.recentImages) { image in
+                        ForEach(appState.recentImages) { image in
                             historyRow(for: image)
                         }
                     }
@@ -96,24 +95,27 @@ struct MenuBarView: View {
                 .frame(height: listHeight)
             }
 
-            if snapshot.isPinned {
+            if appState.isPinned {
                 Button {
                     appState.followToday()
                 } label: {
                     Label("Follow Today", systemImage: "sun.max")
                 }
-                .disabled(snapshot.isRefreshing)
+                .disabled(appState.isRefreshing)
             }
         }
     }
 
     private func historyRow(for image: BingImage) -> some View {
-        let isCurrent = snapshot.currentImage?.hsh == image.hsh
+        let isCurrent = appState.currentImage?.hsh == image.hsh
         return Button {
             appState.applyImage(image)
         } label: {
             HStack(spacing: 10) {
-                thumbnail(for: image)
+                LibraryThumbnail(
+                    sourceURL: appState.fileURL(for: image),
+                    thumbnailURL: appState.thumbnailURL(for: image)
+                )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(image.displayTitle)
                         .font(.caption.weight(isCurrent ? .semibold : .regular))
@@ -136,31 +138,7 @@ struct MenuBarView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(snapshot.isRefreshing || isCurrent)
-    }
-
-    @ViewBuilder
-    private func thumbnail(for image: BingImage) -> some View {
-        let _ = snapshot.libraryRevision
-        let url = appState.fileURL(for: image)
-        if let nsImage = NSImage(contentsOf: url) {
-            Image(nsImage: nsImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 64, height: 40)
-                .clipped()
-                .cornerRadius(4)
-        } else {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(.quaternary)
-                .frame(width: 64, height: 40)
-                .overlay {
-                    if snapshot.isRefreshing {
-                        ProgressView()
-                            .controlSize(.mini)
-                    }
-                }
-        }
+        .disabled(appState.isRefreshing || isCurrent)
     }
 
     private var controls: some View {
@@ -170,20 +148,17 @@ struct MenuBarView: View {
             } label: {
                 Label("Refresh Now", systemImage: "arrow.clockwise")
             }
-            .disabled(snapshot.isRefreshing)
+            .disabled(appState.isRefreshing)
             .keyboardShortcut("r")
 
-            Toggle("Auto-refresh daily", isOn: Binding(
-                get: { snapshot.autoRefreshEnabled },
-                set: { appState.autoRefreshEnabled = $0 }
-            ))
+            Toggle("Auto-refresh daily", isOn: $appState.autoRefreshEnabled)
 
             Toggle("Launch at login", isOn: Binding(
-                get: { snapshot.launchAtLoginEnabled },
+                get: { appState.launchAtLoginEnabled },
                 set: { appState.toggleLaunchAtLogin($0) }
             ))
 
-            if snapshot.currentImage?.infoURL != nil {
+            if appState.currentImage?.infoURL != nil {
                 Button {
                     appState.openCopyrightPage()
                 } label: {
@@ -197,6 +172,34 @@ struct MenuBarView: View {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
+        }
+    }
+}
+
+private struct LibraryThumbnail: View {
+    let sourceURL: URL
+    let thumbnailURL: URL
+    @State private var image: NSImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(.quaternary)
+            }
+        }
+        .frame(width: 64, height: 40)
+        .clipped()
+        .cornerRadius(4)
+        .task(id: sourceURL.path) {
+            image = await WallpaperService.loadThumbnailImage(
+                source: sourceURL,
+                destination: thumbnailURL
+            )
         }
     }
 }
