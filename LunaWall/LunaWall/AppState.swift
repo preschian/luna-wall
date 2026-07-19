@@ -1,10 +1,9 @@
 import AppKit
 import Foundation
-import Observation
+import Combine
 
 @MainActor
-@Observable
-final class AppState {
+final class AppState: ObservableObject {
     private enum DefaultsKey {
         static let lastAppliedHash = "lastAppliedHash"
         static let lastAppliedDate = "lastAppliedDate"
@@ -15,19 +14,21 @@ final class AppState {
     /// Number of recent Bing days to fetch (API caps at 8).
     static let historyCount = 8
 
-    var currentImage: BingImage?
-    var recentImages: [BingImage] = []
-    var statusMessage = "Ready"
-    var isRefreshing = false
-    var lastError: String?
-    var autoRefreshEnabled: Bool {
+    @Published var currentImage: BingImage?
+    @Published var recentImages: [BingImage] = []
+    /// Bumped when cached library files change so thumbnails reload.
+    @Published var libraryRevision = 0
+    @Published var statusMessage = "Ready"
+    @Published var isRefreshing = false
+    @Published var lastError: String?
+    @Published var autoRefreshEnabled: Bool {
         didSet { UserDefaults.standard.set(autoRefreshEnabled, forKey: DefaultsKey.autoRefreshEnabled) }
     }
     /// When set, auto-refresh keeps this image instead of switching to today’s.
-    var pinnedHash: String? {
+    @Published var pinnedHash: String? {
         didSet { UserDefaults.standard.set(pinnedHash, forKey: DefaultsKey.pinnedHash) }
     }
-    var launchAtLoginEnabled: Bool
+    @Published var launchAtLoginEnabled: Bool
 
     var isPinned: Bool { pinnedHash != nil }
 
@@ -92,6 +93,10 @@ final class AppState {
         }
     }
 
+    func fileURL(for image: BingImage) -> URL {
+        wallpaperService.localFileURL(for: image)
+    }
+
     func toggleLaunchAtLogin(_ enabled: Bool) {
         do {
             try LaunchAtLoginService.setEnabled(enabled)
@@ -137,6 +142,9 @@ final class AppState {
                 throw BingWallpaperError.emptyArchive
             }
 
+            await prefetchLibrary(images, generation: generation)
+            guard generation == operationGeneration else { return }
+
             let pinnedImage: BingImage? = {
                 guard !preferToday, let hash = pinnedHash else { return nil }
                 return images.first(where: { $0.hsh == hash })
@@ -166,6 +174,49 @@ final class AppState {
         }
     }
 
+    /// Downloads any missing recent wallpapers so the library and Recent list are fully populated.
+    private func prefetchLibrary(_ images: [BingImage], generation: Int) async {
+        let pending = images.filter {
+            !FileManager.default.fileExists(atPath: wallpaperService.localFileURL(for: $0).path)
+        }
+        guard !pending.isEmpty else {
+            libraryRevision &+= 1
+            return
+        }
+
+        statusMessage = "Downloading library 0/\(pending.count)…"
+        var finished = 0
+
+        await withTaskGroup(of: Bool.self) { group in
+            for image in pending {
+                let destination = wallpaperService.localFileURL(for: image)
+                let service = bingService
+                group.addTask {
+                    do {
+                        try await service.download(image, to: destination)
+                        return true
+                    } catch {
+                        return false
+                    }
+                }
+            }
+
+            for await success in group {
+                guard generation == operationGeneration else {
+                    group.cancelAll()
+                    return
+                }
+                if success {
+                    finished += 1
+                    libraryRevision &+= 1
+                }
+                statusMessage = "Downloading library \(finished)/\(pending.count)…"
+            }
+        }
+
+        libraryRevision &+= 1
+    }
+
     private func performApplySelected(_ image: BingImage, generation: Int) async {
         do {
             let today: BingImage
@@ -176,6 +227,8 @@ final class AppState {
                 let images = try await bingService.fetchImages(count: Self.historyCount)
                 guard generation == operationGeneration else { return }
                 recentImages = images
+                await prefetchLibrary(images, generation: generation)
+                guard generation == operationGeneration else { return }
                 guard let first = images.first else {
                     throw BingWallpaperError.emptyArchive
                 }
@@ -196,6 +249,7 @@ final class AppState {
                 statusMessage = "Downloading…"
                 try await bingService.download(image, to: fileURL)
                 guard generation == operationGeneration else { return }
+                libraryRevision &+= 1
             }
 
             statusMessage = "Setting wallpaper…"

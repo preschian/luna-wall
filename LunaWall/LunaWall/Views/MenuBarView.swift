@@ -2,20 +2,19 @@ import AppKit
 import SwiftUI
 
 struct MenuBarView: View {
-    @Bindable var appState: AppState
+    @ObservedObject var appState: AppState
+    var snapshot: MenuSnapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             Divider()
             details
-            if !appState.recentImages.isEmpty {
-                Divider()
-                recentHistory
-            }
+            Divider()
+            recentHistory
             Divider()
             controls
-            if let error = appState.lastError {
+            if let error = snapshot.lastError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -23,7 +22,7 @@ struct MenuBarView: View {
             }
         }
         .padding(14)
-        .frame(width: 320)
+        .frame(width: 340)
     }
 
     private var header: some View {
@@ -31,12 +30,12 @@ struct MenuBarView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("LunaWall")
                     .font(.headline)
-                Text(appState.statusMessage)
+                Text(snapshot.statusMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if appState.isRefreshing {
+            if snapshot.isRefreshing {
                 ProgressView()
                     .controlSize(.small)
             }
@@ -45,9 +44,9 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private var details: some View {
-        if let image = appState.currentImage {
+        if let image = snapshot.currentImage {
             VStack(alignment: .leading, spacing: 6) {
-                Text(image.title)
+                Text(image.displayTitle)
                     .font(.subheadline.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(image.copyright)
@@ -58,7 +57,7 @@ struct MenuBarView: View {
                     Text(image.displayDate)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                    if appState.isPinned {
+                    if snapshot.isPinned {
                         Text("Pinned")
                             .font(.caption2.weight(.medium))
                             .foregroundStyle(.orange)
@@ -78,34 +77,45 @@ struct MenuBarView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            ScrollView {
-                VStack(spacing: 2) {
-                    ForEach(appState.recentImages) { image in
-                        historyRow(for: image)
+            if snapshot.recentImages.isEmpty {
+                Text(snapshot.isRefreshing ? "Loading…" : "No recent images yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                // MenuBarExtra often collapses ScrollView when only maxHeight is set.
+                let rowHeight: CGFloat = 52
+                let listHeight = min(CGFloat(snapshot.recentImages.count) * rowHeight, 280)
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(snapshot.recentImages) { image in
+                            historyRow(for: image)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(height: listHeight)
             }
-            .frame(maxHeight: 180)
 
-            if appState.isPinned {
+            if snapshot.isPinned {
                 Button {
                     appState.followToday()
                 } label: {
                     Label("Follow Today", systemImage: "sun.max")
                 }
-                .disabled(appState.isRefreshing)
+                .disabled(snapshot.isRefreshing)
             }
         }
     }
 
     private func historyRow(for image: BingImage) -> some View {
-        let isCurrent = appState.currentImage?.hsh == image.hsh
+        let isCurrent = snapshot.currentImage?.hsh == image.hsh
         return Button {
             appState.applyImage(image)
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(spacing: 10) {
+                thumbnail(for: image)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(image.title)
+                    Text(image.displayTitle)
                         .font(.caption.weight(isCurrent ? .semibold : .regular))
                         .foregroundStyle(.primary)
                         .lineLimit(2)
@@ -126,7 +136,31 @@ struct MenuBarView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(appState.isRefreshing || isCurrent)
+        .disabled(snapshot.isRefreshing || isCurrent)
+    }
+
+    @ViewBuilder
+    private func thumbnail(for image: BingImage) -> some View {
+        let _ = snapshot.libraryRevision
+        let url = appState.fileURL(for: image)
+        if let nsImage = NSImage(contentsOf: url) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 64, height: 40)
+                .clipped()
+                .cornerRadius(4)
+        } else {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(.quaternary)
+                .frame(width: 64, height: 40)
+                .overlay {
+                    if snapshot.isRefreshing {
+                        ProgressView()
+                            .controlSize(.mini)
+                    }
+                }
+        }
     }
 
     private var controls: some View {
@@ -136,17 +170,20 @@ struct MenuBarView: View {
             } label: {
                 Label("Refresh Now", systemImage: "arrow.clockwise")
             }
-            .disabled(appState.isRefreshing)
+            .disabled(snapshot.isRefreshing)
             .keyboardShortcut("r")
 
-            Toggle("Auto-refresh daily", isOn: $appState.autoRefreshEnabled)
+            Toggle("Auto-refresh daily", isOn: Binding(
+                get: { snapshot.autoRefreshEnabled },
+                set: { appState.autoRefreshEnabled = $0 }
+            ))
 
             Toggle("Launch at login", isOn: Binding(
-                get: { appState.launchAtLoginEnabled },
+                get: { snapshot.launchAtLoginEnabled },
                 set: { appState.toggleLaunchAtLogin($0) }
             ))
 
-            if appState.currentImage?.infoURL != nil {
+            if snapshot.currentImage?.infoURL != nil {
                 Button {
                     appState.openCopyrightPage()
                 } label: {

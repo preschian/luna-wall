@@ -2,13 +2,16 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let appState = AppState()
+    /// Single shared state so SwiftUI’s adaptor instance and the real NSApp delegate stay in sync.
+    static let sharedState = AppState()
+
+    var appState: AppState { Self.sharedState }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        appState.start()
+        Self.sharedState.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        appState.stop()
+        Self.sharedState.stop()
     }
 }
