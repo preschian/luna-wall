@@ -31,6 +31,6 @@ open build/Build/Products/Release/LunaWall.app
 
 1. Calls Bing’s public archive API:  
    `https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=8&uhd=1`
-2. Downloads the UHD JPEG into Application Support (`LunaWall/` inside the app container when sandboxed), reusing a file if it is already cached
+2. Downloads the UHD JPEG into `~/Downloads/luna-wall`, reusing a file if it is already cached
 3. Sets it as the desktop image via `NSWorkspace.setDesktopImageURL`
 4. Applying a past day pins that hash so scheduled refresh won’t replace it until you choose **Follow Today** or apply today’s image

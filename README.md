@@ -11,7 +11,7 @@ Simple native macOS menu bar app that sets your desktop wallpaper to Bing’s ph
 - Pin a past day to keep it; otherwise auto-refresh follows today
 - Optional launch at login
 - Menu bar UI with title, copyright, history, and manual refresh
-- Caches downloaded images under Application Support
+- Caches downloaded images in `~/Downloads/luna-wall`
 
 ## Contributing
 

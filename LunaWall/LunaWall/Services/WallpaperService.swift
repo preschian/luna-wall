@@ -17,9 +17,9 @@ enum WallpaperServiceError: LocalizedError {
 
 struct WallpaperService {
     var storageDirectory: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        return base.appendingPathComponent("LunaWall", isDirectory: true)
+        let base = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads", isDirectory: true)
+        return base.appendingPathComponent("luna-wall", isDirectory: true)
     }
 
     func localFileURL(for image: BingImage) -> URL {
