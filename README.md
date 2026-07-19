@@ -10,41 +10,12 @@ Simple native macOS menu bar app that sets your desktop wallpaper to Bing’s ph
 - Optional launch at login
 - Menu bar UI with title, copyright, and manual refresh
 
-## Requirements
+## Contributing
 
-- macOS 14 or later
-- Xcode 15+ (or newer)
-
-## Build & run
-
-```bash
-cd LunaWall
-xcodegen generate
-open LunaWall.xcodeproj
-```
-
-In Xcode, select the **LunaWall** scheme and press **Run** (`⌘R`).
-
-The app lives in the menu bar (photo icon). Click it to refresh, toggle auto-refresh, or enable launch at login.
-
-### Command-line build
-
-```bash
-cd LunaWall
-xcodegen generate
-xcodebuild -scheme LunaWall -configuration Release -derivedDataPath build
-open build/Build/Products/Release/LunaWall.app
-```
-
-## How it works
-
-1. Calls Bing’s public archive API:  
-   `https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&uhd=1`
-2. Downloads the UHD JPEG into `~/Library/Application Support/LunaWall/`
-3. Sets it as the desktop image via `NSWorkspace.setDesktopImageURL`
-
-Images are provided by Bing for wallpaper use. This project is not affiliated with Microsoft.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for requirements, build instructions, and how the app works under the hood.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+Images are provided by Bing for wallpaper use. This project is not affiliated with Microsoft.
