@@ -1,5 +1,16 @@
 # Agent instructions
 
+## Before making changes
+
+If the working tree is clean (no staged or unstaged changes), sync with `origin/main` before starting work:
+
+```bash
+git fetch origin
+git pull --ff-only origin main
+```
+
+Skip this when local changes already exist, so work in progress is not disrupted.
+
 ## Git commits and pull requests
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) for every commit message, PR title, and PR description.
