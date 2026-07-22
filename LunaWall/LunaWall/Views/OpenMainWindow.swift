@@ -5,26 +5,18 @@ enum AppWindowID {
     static let main = "main"
 }
 
-/// Bridges AppKit reopen / menu-bar actions to SwiftUI `openWindow`.
+/// AppKit Dock-reopen bridge. Registered from the main window (and menu bar as backup);
+/// `OpenWindowAction` remains usable after the window is closed.
 @MainActor
 enum OpenMainWindow {
-    static var action: OpenWindowAction?
-
-    static func show() {
-        NSApp.activate(ignoringOtherApps: true)
-        if let action {
-            action(id: AppWindowID.main)
-            return
-        }
-        if let window = NSApp.windows.first(where: { $0.canBecomeMain || $0.canBecomeKey }) {
-            if window.isMiniaturized {
-                window.deminiaturize(nil)
-            }
-            window.makeKeyAndOrderFront(nil)
-        }
-    }
+    private static var action: OpenWindowAction?
 
     static func register(_ openWindow: OpenWindowAction) {
         action = openWindow
+    }
+
+    static func show() {
+        NSApp.activate(ignoringOtherApps: true)
+        action?(id: AppWindowID.main)
     }
 }

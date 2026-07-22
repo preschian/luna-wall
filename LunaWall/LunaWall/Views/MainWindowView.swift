@@ -24,6 +24,7 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 640, minHeight: 480)
         .background(.background)
+        // Register once at launch so Dock reopen works after the window is closed.
         .onAppear {
             OpenMainWindow.register(openWindow)
         }
@@ -63,11 +64,16 @@ struct MainWindowView: View {
 
             if let image = appState.currentImage {
                 HStack(alignment: .top, spacing: 16) {
-                    WallpaperPreview(fileURL: appState.fileURL(for: image))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 4)
-                                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                        }
+                    LibraryThumbnail(
+                        sourceURL: appState.fileURL(for: image),
+                        thumbnailURL: appState.thumbnailURL(for: image),
+                        width: 280,
+                        height: 158
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                    }
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(image.displayTitle)
