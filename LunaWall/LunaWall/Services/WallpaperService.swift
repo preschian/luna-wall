@@ -126,14 +126,24 @@ struct WallpaperService: Sendable {
         }
     }
 
-    nonisolated static func loadThumbnailImage(source: URL, destination: URL) async -> NSImage? {
+    nonisolated static func loadThumbnailImage(
+        source: URL,
+        destination: URL,
+        maxPixelSize: CGFloat = 320
+    ) async -> NSImage? {
         await Task.detached(priority: .utility) {
             do {
-                try ensureThumbnail(source: source, destination: destination)
+                try ensureThumbnail(source: source, destination: destination, maxPixelSize: maxPixelSize)
                 return NSImage(contentsOf: destination)
             } catch {
                 return nil
             }
+        }.value
+    }
+
+    nonisolated static func loadImage(at fileURL: URL) async -> NSImage? {
+        await Task.detached(priority: .utility) {
+            NSImage(contentsOf: fileURL)
         }.value
     }
 
