@@ -20,6 +20,9 @@ enum WallpaperServiceError: LocalizedError {
 }
 
 struct WallpaperService: Sendable {
+    /// Canonical on-disk thumbnail size for grid and window previews.
+    static let thumbnailMaxPixelSize: CGFloat = 320
+
     var storageDirectory: URL {
         let base = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads", isDirectory: true)
@@ -39,7 +42,9 @@ struct WallpaperService: Sendable {
     func thumbnailFileURL(for image: BingImage) -> URL {
         let startdate = Self.sanitizePathComponent(image.startdate)
         let hash = Self.sanitizePathComponent(image.hsh)
-        return thumbnailDirectory.appendingPathComponent("\(startdate)-\(hash).jpg")
+        // Size suffix invalidates older thumbs when the canonical pixel size changes.
+        let size = Int(Self.thumbnailMaxPixelSize)
+        return thumbnailDirectory.appendingPathComponent("\(startdate)-\(hash)-p\(size).jpg")
     }
 
     /// Keep wallpaper filenames inside `storageDirectory` even if archive fields are hostile.
@@ -76,12 +81,8 @@ struct WallpaperService: Sendable {
         }
     }
 
-    /// Builds a small on-disk thumbnail for menu UI (off the caller’s actor).
-    nonisolated static func ensureThumbnail(
-        source: URL,
-        destination: URL,
-        maxPixelSize: CGFloat = 160
-    ) throws {
+    /// Builds an on-disk thumbnail at `thumbnailMaxPixelSize` (off the caller’s actor).
+    nonisolated static func ensureThumbnail(source: URL, destination: URL) throws {
         if FileManager.default.fileExists(atPath: destination.path) {
             return
         }
@@ -98,7 +99,7 @@ struct WallpaperService: Sendable {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+            kCGImageSourceThumbnailMaxPixelSize: thumbnailMaxPixelSize,
         ]
         guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(sourceImage, 0, options as CFDictionary) else {
             throw WallpaperServiceError.thumbnailFailed

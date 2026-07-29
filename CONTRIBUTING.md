@@ -16,7 +16,7 @@ open LunaWall.xcodeproj
 
 In Xcode, select the **LunaWall** scheme and press **Run** (`⌘R`).
 
-The app lives in the menu bar (photo icon). Click it to refresh, browse recent days, toggle auto-refresh, or enable launch at login.
+The app opens a main window (history grid, pin/apply, settings). A menu bar icon stays available for quick refresh, follow-today, and reopening the window. Closing the window does not quit the app; use **Quit LunaWall** from the menu bar or the app menu.
 
 ### Command-line build
 

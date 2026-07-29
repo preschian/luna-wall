@@ -14,4 +14,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         Self.sharedState.stop()
     }
+
+    /// Keep the process alive for menu-bar quick actions and scheduled refresh.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    /// Re-open the main window when the Dock icon is clicked after all windows were closed.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            OpenMainWindow.show()
+        }
+        return true
+    }
 }

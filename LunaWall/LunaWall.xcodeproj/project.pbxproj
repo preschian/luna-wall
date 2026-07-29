@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		030242CF067E74DB84648D66 /* LibraryThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8741CC13475BBE0253D1B38E /* LibraryThumbnail.swift */; };
 		262F330CF7C7181767FC062F /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */; };
+		38CD846CAC47520563677DA6 /* OpenMainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B062689486BD836CACF8DC1 /* OpenMainWindow.swift */; };
 		694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DB8612458EAEE386E83D97 /* MenuBarView.swift */; };
+		69F9C0649DFBFB3E72AAD986 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F04EF1EE1DE65284D2B8EE2 /* MainWindowView.swift */; };
 		6A018ECC901E9E8A0F1A6AF1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DFC80869CF29F80ACBF12CC /* Assets.xcassets */; };
 		6CD383E0C86A0AB47C844CAD /* BingImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3ABF40D188DA16D15783D2B /* BingImage.swift */; };
 		75BA62A156A85C2C28C1EA4F /* WallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B856D0455FED9A53B909469 /* WallpaperService.swift */; };
@@ -24,7 +27,10 @@
 		1DFC80869CF29F80ACBF12CC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
 		5B856D0455FED9A53B909469 /* WallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperService.swift; sourceTree = "<group>"; };
+		6B062689486BD836CACF8DC1 /* OpenMainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMainWindow.swift; sourceTree = "<group>"; };
 		6CDE754DFF3BC0E7EC411C8D /* LunaWall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LunaWall.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F04EF1EE1DE65284D2B8EE2 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		8741CC13475BBE0253D1B38E /* LibraryThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryThumbnail.swift; sourceTree = "<group>"; };
 		D28BC1CCAD2811BAE153FB2D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DE63297ECCDF90A9E8008DFE /* BingWallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BingWallpaperService.swift; sourceTree = "<group>"; };
 		E195EDCB960A326D56836B0D /* LunaWallApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunaWallApp.swift; sourceTree = "<group>"; };
@@ -83,7 +89,10 @@
 		D3A3507E4D6D3CDE7F11A810 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8741CC13475BBE0253D1B38E /* LibraryThumbnail.swift */,
+				7F04EF1EE1DE65284D2B8EE2 /* MainWindowView.swift */,
 				15DB8612458EAEE386E83D97 /* MenuBarView.swift */,
+				6B062689486BD836CACF8DC1 /* OpenMainWindow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -163,8 +172,11 @@
 				6CD383E0C86A0AB47C844CAD /* BingImage.swift in Sources */,
 				F5DF11F1BB3A6B2457C001C0 /* BingWallpaperService.swift in Sources */,
 				262F330CF7C7181767FC062F /* LaunchAtLoginService.swift in Sources */,
+				030242CF067E74DB84648D66 /* LibraryThumbnail.swift in Sources */,
 				9CBA7CE070465E76EFBAB8A8 /* LunaWallApp.swift in Sources */,
+				69F9C0649DFBFB3E72AAD986 /* MainWindowView.swift in Sources */,
 				694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */,
+				38CD846CAC47520563677DA6 /* OpenMainWindow.swift in Sources */,
 				75BA62A156A85C2C28C1EA4F /* WallpaperService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
