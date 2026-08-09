@@ -92,3 +92,14 @@ Guidelines:
 - Call out breaking changes explicitly (e.g. a `BREAKING CHANGE` section or note)
 - Keep the summary focused on why the change exists, not a file-by-file dump
 - Include a concrete test plan checklist
+
+### Completion workflow
+
+For every completed piece of work that changes the repository:
+
+1. Commit the intended changes using a Conventional Commit.
+2. Push the branch and open a draft pull request immediately after the work is complete.
+3. Include a concrete, reproducible test plan in the pull request description using Markdown checkboxes.
+4. Validate every test-plan item against the actual result. Change `[ ]` to `[x]` only when that item passes; leave failed or unverified items unchecked and document the reason.
+5. Wait for all required CI/CD checks to finish successfully and confirm that every test-plan item is checked.
+6. Once the test plan and CI/CD checks pass, mark the draft pull request ready and merge it immediately. Do not leave a passing pull request open without merging it.
