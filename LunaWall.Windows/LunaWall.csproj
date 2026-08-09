@@ -9,6 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>LunaWall</RootNamespace>
     <AssemblyName>LunaWall</AssemblyName>
+    <ApplicationIcon>Assets\LunaWall.ico</ApplicationIcon>
     <Product>LunaWall</Product>
     <Description>Bing photo of the day wallpaper for Windows</Description>
   </PropertyGroup>
@@ -19,6 +20,10 @@
     <Using Remove="System.Drawing" />
     <Using Include="System.IO" />
     <Using Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\LunaWall.ico" />
   </ItemGroup>
 
 </Project>

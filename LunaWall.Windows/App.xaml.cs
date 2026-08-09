@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using LunaWall.Models;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
@@ -14,6 +15,7 @@ public partial class App : System.Windows.Application
     private AppState? _state;
     private MainWindow? _mainWindow;
     private Forms.NotifyIcon? _tray;
+    private Drawing.Icon? _trayIcon;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -40,6 +42,7 @@ public partial class App : System.Windows.Application
         _state.Start();
 
         _mainWindow = new MainWindow(_state);
+        _mainWindow.Icon = LoadWindowIcon();
         _mainWindow.Closing += (_, args) =>
         {
             // Keep running in the tray, matching macOS menu-bar lifetime.
@@ -47,10 +50,11 @@ public partial class App : System.Windows.Application
             _mainWindow.Hide();
         };
 
+        _trayIcon = LoadTrayIcon();
         _tray = new Forms.NotifyIcon
         {
             Text = "LunaWall",
-            Icon = Drawing.SystemIcons.Application,
+            Icon = _trayIcon,
             Visible = true,
             ContextMenuStrip = BuildTrayMenu(),
         };
@@ -66,8 +70,56 @@ public partial class App : System.Windows.Application
         {
             _tray.Visible = false;
             _tray.Dispose();
+            _tray = null;
         }
+        _trayIcon?.Dispose();
+        _trayIcon = null;
         base.OnExit(e);
+    }
+
+    private static Drawing.Icon LoadTrayIcon()
+    {
+        // WPF resource stream — reliable for NotifyIcon even before shell associates the exe icon.
+        try
+        {
+            var info = GetResourceStream(new Uri("pack://application:,,,/Assets/LunaWall.ico", UriKind.Absolute));
+            if (info?.Stream is { } stream)
+                return new Drawing.Icon(stream);
+        }
+        catch
+        {
+            // fall through
+        }
+
+        var exe = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(exe) && File.Exists(exe))
+        {
+            try
+            {
+                var fromExe = Drawing.Icon.ExtractAssociatedIcon(exe);
+                if (fromExe is not null)
+                    return (Drawing.Icon)fromExe.Clone();
+            }
+            catch
+            {
+                // fall through
+            }
+        }
+
+        return (Drawing.Icon)Drawing.SystemIcons.Application.Clone();
+    }
+
+    private static BitmapFrame? LoadWindowIcon()
+    {
+        try
+        {
+            var uri = new Uri("pack://application:,,,/Assets/LunaWall.ico", UriKind.Absolute);
+            return BitmapFrame.Create(uri);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private Forms.ContextMenuStrip BuildTrayMenu()
