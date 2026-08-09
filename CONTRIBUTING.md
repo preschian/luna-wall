@@ -11,7 +11,8 @@
 ### Windows
 
 - Windows 10 or later
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (current LTS)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) to build (current LTS)
+- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) to run a published exe
 
 ## Build & run
 
@@ -51,16 +52,14 @@ Closing the main window hides it to the system tray. Quit from the tray menu.
 dotnet run -c Release -- --self-check
 ```
 
-#### Publish a portable exe (self-contained)
+#### Publish (framework-dependent)
 
-No separate .NET runtime required on the target machine:
+Requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) on the target machine:
 
 ```powershell
 cd LunaWall.Windows
-dotnet publish -c Release -r win-x64 --self-contained true `
+dotnet publish -c Release -r win-x64 --self-contained false `
   -p:PublishSingleFile=true `
-  -p:IncludeNativeLibrariesForSelfExtract=true `
-  -p:EnableCompressionInSingleFile=true `
   -o publish
 .\publish\LunaWall.exe
 ```
