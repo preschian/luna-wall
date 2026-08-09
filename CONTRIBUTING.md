@@ -51,12 +51,30 @@ Closing the main window hides it to the system tray. Quit from the tray menu.
 dotnet run -c Release -- --self-check
 ```
 
-#### Publish a local exe
+#### Publish a portable exe (self-contained)
+
+No separate .NET runtime required on the target machine:
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained false -o publish
+cd LunaWall.Windows
+dotnet publish -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:EnableCompressionInSingleFile=true `
+  -o publish
 .\publish\LunaWall.exe
 ```
+
+#### Release (Windows)
+
+Push a version tag; GitHub Actions builds `LunaWall-windows-x64.exe` and attaches it to the release:
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Unsigned downloads may trip SmartScreen; users can choose **More info → Run anyway**.
 
 ## How it works
 
