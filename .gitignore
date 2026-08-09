@@ -35,6 +35,7 @@ LunaWall/build/
 # .NET / Windows
 LunaWall.Windows/bin/
 LunaWall.Windows/obj/
+LunaWall.Windows/publish/
 *.user
 *.suo
 .vs/
