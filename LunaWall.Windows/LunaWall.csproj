@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>LunaWall</RootNamespace>
+    <AssemblyName>LunaWall</AssemblyName>
+    <ApplicationIcon>Assets\LunaWall.ico</ApplicationIcon>
+    <Product>LunaWall</Product>
+    <Description>Bing photo of the day wallpaper for Windows</Description>
+  </PropertyGroup>
+
+  <!-- WinForms tray pulls Forms/Drawing into global usings; keep them out of WPF code. -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\LunaWall.ico" />
+  </ItemGroup>
+
+</Project>
