@@ -32,6 +32,13 @@ playground.xcworkspace
 .build/
 LunaWall/build/
 
+# .NET / Windows
+LunaWall.Windows/bin/
+LunaWall.Windows/obj/
+*.user
+*.suo
+.vs/
+
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However
