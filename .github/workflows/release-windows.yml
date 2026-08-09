@@ -18,15 +18,13 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Publish portable exe
+      - name: Publish framework-dependent exe
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
           dotnet publish LunaWall.Windows/LunaWall.csproj `
-            -c Release -r win-x64 --self-contained true `
+            -c Release -r win-x64 --self-contained false `
             -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:EnableCompressionInSingleFile=true `
             -p:Version=$version `
             -o publish
           Copy-Item publish/LunaWall.exe LunaWall-windows-x64.exe
