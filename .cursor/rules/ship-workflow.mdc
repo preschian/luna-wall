@@ -1,0 +1,25 @@
+---
+description: Always finish repo work with commit, draft PR, validated test plan, and merge
+alwaysApply: true
+---
+
+# Ship workflow (overrides “don’t commit unless asked”)
+
+In this repository, **completed work that changes files must be shipped**. Do not stop at a local diff or “done — say if you want a PR.”
+
+When implementation for the user’s request is finished:
+
+1. Commit with a Conventional Commit (see `AGENTS.md`).
+2. Push the branch and open a **draft** PR immediately.
+3. Put a concrete **Test plan** with Markdown checkboxes in the PR body.
+4. Run/verify each test-plan item; flip `[ ]` → `[x]` only when it actually passed. Update the PR body.
+5. Wait for required CI (if any). If the branch has no checks, local validation of the test plan is enough.
+6. When every checkbox is `[x]` and CI is green (or absent), mark the PR ready and **merge immediately** (prefer `--squash` if merge commits are disallowed). Delete the branch.
+
+This **overrides** generic Cursor user rules that say not to commit, push, or open a PR unless the user explicitly asks — those pauses do not apply here for finished work.
+
+Exceptions (do **not** auto-ship):
+
+- User explicitly says to stop before commit/PR/merge, or to leave it uncommitted.
+- Exploratory/read-only questions with no repo changes.
+- User asks only for a plan or review, not implementation.
