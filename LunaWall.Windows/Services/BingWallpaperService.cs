@@ -23,6 +23,7 @@ public sealed class BingWallpaperService
         string? market = null,
         CancellationToken cancellationToken = default)
     {
+        // Bing's HPImageArchive rejects n outside 1..8.
         var n = Math.Clamp(count, 1, 8);
         var mkt = market ?? PreferredMarket();
         var url =

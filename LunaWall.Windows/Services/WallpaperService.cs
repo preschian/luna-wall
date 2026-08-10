@@ -51,6 +51,7 @@ public sealed class WallpaperService
         return filtered.Length == 0 ? "unknown" : filtered;
     }
 
+    /// <summary>Deletes cached wallpapers/thumbnails that are not in <paramref name="images"/>.</summary>
     public void Evict(IEnumerable<BingImage> images)
     {
         var keepWallpapers = images.Select(LocalFilePath).Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase);

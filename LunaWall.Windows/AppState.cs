@@ -12,6 +12,7 @@ public sealed class AppState : INotifyPropertyChanged
     private const string AutoRefreshEnabledKey = "autoRefreshEnabled";
     private const string PinnedHashKey = "pinnedHash";
 
+    /// <summary>Bing HPImageArchive allows at most 8 images per request.</summary>
     public const int HistoryCount = 8;
 
     private enum TargetPolicy
@@ -237,13 +238,15 @@ public sealed class AppState : INotifyPropertyChanged
             _earliestRetryAt = null;
 
             var today = images[0];
+            // Grow Recent beyond Bing's 8-day window by keeping every day we've fetched.
+            var library = LibraryStore.MergeAndSave(images);
             var pinned = PinnedHash;
-            var target = ResolveTarget(images, today, pinned, policy, exact);
+            var target = ResolveTarget(library, today, pinned, policy, exact);
             var lastHash = AppSettings.GetString(LastAppliedHashKey);
             var filePath = _wallpaper.LocalFilePath(target);
             var cachePresent = File.Exists(filePath);
 
-            RunOnUi(() => RecentImages = images.ToList());
+            RunOnUi(() => RecentImages = library);
 
             if (!force && lastHash == target.Hash && cachePresent)
             {
@@ -262,7 +265,8 @@ public sealed class AppState : INotifyPropertyChanged
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            ScheduleLibraryWarmup(images);
+            // Download only the fresh Bing window; retain the full library on disk.
+            ScheduleLibraryWarmup(images, library);
         }
         catch (OperationCanceledException)
         {
@@ -329,7 +333,7 @@ public sealed class AppState : INotifyPropertyChanged
         });
     }
 
-    private void ScheduleLibraryWarmup(IReadOnlyList<BingImage> images)
+    private void ScheduleLibraryWarmup(IReadOnlyList<BingImage> toDownload, IReadOnlyList<BingImage> retain)
     {
         try { _libraryCts?.Cancel(); } catch { /* ignore */ }
         _libraryCts?.Dispose();
@@ -340,7 +344,7 @@ public sealed class AppState : INotifyPropertyChanged
         {
             try
             {
-                await WarmupLibraryAsync(images, cts.Token).ConfigureAwait(false);
+                await WarmupLibraryAsync(toDownload, retain, cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -349,12 +353,15 @@ public sealed class AppState : INotifyPropertyChanged
         }, CancellationToken.None);
     }
 
-    private async Task WarmupLibraryAsync(IReadOnlyList<BingImage> images, CancellationToken cancellationToken)
+    private async Task WarmupLibraryAsync(
+        IReadOnlyList<BingImage> toDownload,
+        IReadOnlyList<BingImage> retain,
+        CancellationToken cancellationToken)
     {
         RunOnUi(() => IsWarmingLibrary = true);
         try
         {
-            var pending = images.Where(i => !File.Exists(_wallpaper.LocalFilePath(i))).ToList();
+            var pending = toDownload.Where(i => !File.Exists(_wallpaper.LocalFilePath(i))).ToList();
             if (pending.Count > 0)
             {
                 RunOnUi(() => StatusMessage = $"Downloading library 0/{pending.Count}…");
@@ -395,7 +402,7 @@ public sealed class AppState : INotifyPropertyChanged
 
             await Task.Run(() =>
             {
-                foreach (var image in images)
+                foreach (var image in toDownload)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     WallpaperService.LoadThumbnailImage(
@@ -405,7 +412,8 @@ public sealed class AppState : INotifyPropertyChanged
             }, cancellationToken).ConfigureAwait(false);
 
             cancellationToken.ThrowIfCancellationRequested();
-            _wallpaper.Evict(images);
+            // Keep every library day; only delete orphan files not in the catalog.
+            _wallpaper.Evict(retain);
 
             RunOnUi(() =>
             {
