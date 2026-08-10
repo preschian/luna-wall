@@ -66,6 +66,35 @@ struct WallpaperService: Sendable {
         Self.evictDirectory(thumbnailDirectory, keeping: keepThumbs, pathExtension: "jpg")
     }
 
+    /// Files and bytes currently cached (wallpapers plus thumbnails).
+    func cacheUsage() -> (files: Int, bytes: Int64) {
+        var files = 0
+        var bytes: Int64 = 0
+        for directory in [storageDirectory, thumbnailDirectory] {
+            guard let contents = try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.fileSizeKey],
+                options: [.skipsHiddenFiles]
+            ) else {
+                continue
+            }
+            for file in contents where file.pathExtension.lowercased() == "jpg" {
+                guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize else { continue }
+                bytes += Int64(size)
+                files += 1
+            }
+        }
+        return (files, bytes)
+    }
+
+    /// Deletes full-resolution files older than `cutoff` (a `yyyyMMdd` key), keeping the applied
+    /// wallpaper. Thumbnails survive so the library still renders; files re-download on demand.
+    func deleteFullResolution(olderThan cutoff: String, keep: BingImage?, library: [BingImage]) {
+        for image in library where image.startdate < cutoff && image.hsh != keep?.hsh {
+            try? FileManager.default.removeItem(at: localFileURL(for: image))
+        }
+    }
+
     private static func evictDirectory(_ directory: URL, keeping: Set<String>, pathExtension: String) {
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: directory,

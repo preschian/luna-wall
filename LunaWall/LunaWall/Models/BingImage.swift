@@ -4,7 +4,7 @@ struct BingArchiveResponse: Decodable, Sendable {
     let images: [BingImage]
 }
 
-struct BingImage: Decodable, Identifiable, Sendable, Equatable {
+struct BingImage: Codable, Identifiable, Sendable, Equatable {
     let startdate: String
     let urlbase: String
     let copyright: String
@@ -59,6 +59,26 @@ struct BingImage: Decodable, Identifiable, Sendable, Equatable {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.locale = .current
+        return formatter.string(from: date)
+    }
+
+    /// "August 2026" — shelf heading in the library.
+    var monthLabel: String { localized("MMMMy") }
+    /// "Aug 10" — caption under the recent strip.
+    var shortLabel: String { localized("MMMd") }
+    /// "10" — day badge on a library tile.
+    var dayLabel: String { localized("d") }
+    /// Stable grouping/sorting key (`yyyyMM`).
+    var monthKey: String { String(startdate.prefix(6)) }
+
+    private func localized(_ template: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd"
+        guard let date = formatter.date(from: startdate) else { return startdate }
+
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate(template)
         return formatter.string(from: date)
     }
 
