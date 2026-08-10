@@ -60,6 +60,43 @@ public sealed class WallpaperService
         EvictDirectory(ThumbnailDirectory, keepThumbs, ".jpg");
     }
 
+    /// <summary>File count and total bytes across cached wallpapers and thumbnails.</summary>
+    public (int Files, long Bytes) CacheUsage()
+    {
+        var files = 0;
+        var bytes = 0L;
+        foreach (var directory in new[] { StorageDirectory, ThumbnailDirectory })
+        {
+            if (!Directory.Exists(directory)) continue;
+            foreach (var file in Directory.EnumerateFiles(directory, "*.jpg"))
+            {
+                try
+                {
+                    bytes += new FileInfo(file).Length;
+                    files++;
+                }
+                catch { /* raced with a delete */ }
+            }
+        }
+        return (files, bytes);
+    }
+
+    /// <summary>
+    /// Deletes full-resolution files older than <paramref name="cutoff"/>, keeping the applied
+    /// wallpaper. Thumbnails survive so the library still renders; files re-download on demand.
+    /// </summary>
+    public void DeleteFullResolutionOlderThan(DateTime cutoff, BingImage? keep, IEnumerable<BingImage> library)
+    {
+        var cutoffKey = cutoff.ToString("yyyyMMdd");
+        foreach (var image in library)
+        {
+            if (keep is not null && image.Hash == keep.Hash) continue;
+            if (string.CompareOrdinal(image.StartDate, cutoffKey) >= 0) continue;
+            var path = LocalFilePath(image);
+            try { if (File.Exists(path)) File.Delete(path); } catch { /* best effort */ }
+        }
+    }
+
     private static void EvictDirectory(string directory, HashSet<string?> keeping, string extension)
     {
         if (!Directory.Exists(directory)) return;
@@ -115,6 +152,27 @@ public sealed class WallpaperService
             var image = new BitmapImage();
             image.BeginInit();
             image.UriSource = new Uri(destination, UriKind.Absolute);
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Decodes a cached wallpaper at <paramref name="decodeWidth"/> for the hero/detail views.</summary>
+    public static BitmapImage? LoadPreviewImage(string path, int decodeWidth)
+    {
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(path, UriKind.Absolute);
+            image.DecodePixelWidth = decodeWidth;
             image.CacheOption = BitmapCacheOption.OnLoad;
             image.EndInit();
             image.Freeze();

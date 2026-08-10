@@ -28,7 +28,8 @@ internal static class LibraryStore
     /// <summary>
     /// Upserts <paramref name="incoming"/> by hash, keeps older entries, and returns newest-first.
     /// </summary>
-    public static IReadOnlyList<BingImage> MergeAndSave(IEnumerable<BingImage> incoming)
+    /// <param name="retentionDays">Drop entries older than this many days; 0 keeps everything.</param>
+    public static IReadOnlyList<BingImage> MergeAndSave(IEnumerable<BingImage> incoming, int retentionDays = 0)
     {
         lock (Gate)
         {
@@ -45,19 +46,36 @@ internal static class LibraryStore
                 byHash[image.Hash] = image;
             }
 
-            var merged = SortNewestFirst(byHash.Values);
-            try
-            {
-                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-                File.WriteAllText(Path, JsonSerializer.Serialize(merged, JsonOptions));
-            }
-            catch
-            {
-                // best effort — in-memory merge still returned
-            }
-
-            return merged;
+            return SaveUnlocked(ApplyRetention(SortNewestFirst(byHash.Values), retentionDays));
         }
+    }
+
+    /// <summary>Re-applies a retention window to what is already on disk.</summary>
+    public static IReadOnlyList<BingImage> Trim(int retentionDays)
+    {
+        lock (Gate) return SaveUnlocked(ApplyRetention(LoadUnlocked(), retentionDays));
+    }
+
+    private static List<BingImage> ApplyRetention(IReadOnlyList<BingImage> images, int retentionDays)
+    {
+        if (retentionDays <= 0) return images.ToList();
+        var cutoff = DateTime.Today.AddDays(-retentionDays).ToString("yyyyMMdd");
+        return images.Where(i => string.CompareOrdinal(i.StartDate, cutoff) >= 0).ToList();
+    }
+
+    private static IReadOnlyList<BingImage> SaveUnlocked(List<BingImage> images)
+    {
+        try
+        {
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
+            File.WriteAllText(Path, JsonSerializer.Serialize(images, JsonOptions));
+        }
+        catch
+        {
+            // best effort — the in-memory list is still returned
+        }
+
+        return images;
     }
 
     private static IReadOnlyList<BingImage> LoadUnlocked()
