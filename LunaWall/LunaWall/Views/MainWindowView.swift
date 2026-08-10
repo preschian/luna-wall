@@ -275,7 +275,7 @@ struct MainWindowView: View {
                     Text("Settings")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text("Auto-checks every 30 minutes and after your Mac wakes.")
+                    Text("Auto-checks on launch, every 8 hours, and after your Mac wakes.")
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.45))
                         .padding(.top, 4)

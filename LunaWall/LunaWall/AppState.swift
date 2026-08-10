@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
         static let autoRefreshEnabled = "autoRefreshEnabled"
         static let pinnedHash = "pinnedHash"
         static let retentionDays = "retentionDays"
+        static let didSeedLaunchAtLogin = "didSeedLaunchAtLogin"
     }
 
     private enum TargetPolicy: Sendable {
@@ -20,6 +21,9 @@ final class AppState: ObservableObject {
 
     /// Number of recent Bing days to fetch (API caps at 8).
     static let historyCount = 8
+
+    /// Hours between automatic checks after the launch fetch (matches the Windows app).
+    static let checkIntervalHours = 8.0
 
     @Published var currentImage: BingImage?
     @Published var recentImages: [BingImage] = []
@@ -66,7 +70,7 @@ final class AppState: ObservableObject {
         }
         autoRefreshEnabled = defaults.bool(forKey: DefaultsKey.autoRefreshEnabled)
         pinnedHash = defaults.string(forKey: DefaultsKey.pinnedHash)
-        launchAtLoginEnabled = LaunchAtLoginService.isEnabled
+        launchAtLoginEnabled = Self.seedLaunchAtLogin(defaults: defaults)
         retentionDays = defaults.integer(forKey: DefaultsKey.retentionDays)
         recentImages = LibraryStore.load()
     }
@@ -383,9 +387,19 @@ final class AppState: ObservableObject {
         return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
     }
 
+    /// Turns the login item on the first time LunaWall runs; the user's later choice wins.
+    private static func seedLaunchAtLogin(defaults: UserDefaults) -> Bool {
+        guard !defaults.bool(forKey: DefaultsKey.didSeedLaunchAtLogin) else {
+            return LaunchAtLoginService.isEnabled
+        }
+        defaults.set(true, forKey: DefaultsKey.didSeedLaunchAtLogin)
+        try? LaunchAtLoginService.setEnabled(true)
+        return LaunchAtLoginService.isEnabled
+    }
+
     private func startScheduler() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 30 * 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: Self.checkIntervalHours * 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.autoRefreshEnabled else { return }
                 self.refresh(force: false)
