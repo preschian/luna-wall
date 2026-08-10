@@ -82,3 +82,4 @@ Unsigned downloads may trip SmartScreen; users can choose **More info → Run an
 2. Downloads the UHD JPEG into `Downloads/luna-wall`, reusing a file if it is already cached
 3. Sets it as the desktop image (`NSWorkspace.setDesktopImageURL` on macOS, `SystemParametersInfo` on Windows)
 4. Applying a past day pins that hash so scheduled refresh won’t replace it until you choose **Follow Today** or apply today’s image
+5. On Windows, merges each fetch into `%LOCALAPPDATA%\LunaWall\library.json` and retains those files so Recent grows day by day beyond Bing’s 8-image window
