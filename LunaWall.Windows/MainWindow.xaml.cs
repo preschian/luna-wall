@@ -385,7 +385,8 @@ public sealed class MainWindowModel : INotifyPropertyChanged
         _syncingLaunch = false;
 
         if (propertyName is null or nameof(AppState.CurrentImage) or nameof(AppState.IsWarmingLibrary)
-            or nameof(AppState.RecentImages) or nameof(AppState.IsRefreshing))
+            or nameof(AppState.RecentImages) or nameof(AppState.IsRefreshing)
+            or nameof(AppState.PinnedHash) or nameof(AppState.IsPinned))
         {
             RefreshHero();
             RebuildLibrary();
