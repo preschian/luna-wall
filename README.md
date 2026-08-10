@@ -23,9 +23,9 @@ A menu-bar-only panel was too constrained for reliable observation, scrolling, a
 - Each refresh merges Bing’s 8-day API window into that catalog, so history is not capped at 8 days
 - Optional 90-day retention, cache usage summary, and a clean-up that keeps thumbnails
 - Applies it as the desktop wallpaper
-- Auto-checks every 30 minutes (and after wake / resume)
+- Auto-checks on launch, every 8 hours, and after wake / resume
 - Pin a day (past or today) to keep it; otherwise auto-refresh follows today
-- Optional launch at login
+- Launch at login, enabled on first run
 - Menu bar / tray shortcuts for refresh, follow-today, and opening the window
 - Caches downloaded images in `~/Downloads/luna-wall` (macOS) or `%USERPROFILE%\Downloads\luna-wall` (Windows)
 

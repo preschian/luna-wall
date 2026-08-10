@@ -200,8 +200,8 @@ public sealed class MainWindowModel : INotifyPropertyChanged
             var line = "ON YOUR DESKTOP · FOLLOWING TODAY";
             if (_state.NextCheckAt is { } next)
             {
-                var minutes = (int)Math.Max(0, Math.Round((next - DateTime.Now).TotalMinutes));
-                line += $" · NEXT CHECK {minutes} MIN";
+                var hours = (int)Math.Max(0, Math.Round((next - DateTime.Now).TotalHours));
+                line += $" · NEXT CHECK {hours} H";
             }
             return line;
         }

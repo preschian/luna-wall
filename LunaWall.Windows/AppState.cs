@@ -13,8 +13,8 @@ public sealed class AppState : INotifyPropertyChanged
     private const string PinnedHashKey = "pinnedHash";
     private const string RetentionDaysKey = "retentionDays";
 
-    /// <summary>Minutes between automatic checks.</summary>
-    private const int CheckIntervalMinutes = 30;
+    /// <summary>Hours between automatic checks after the launch fetch.</summary>
+    private const int CheckIntervalHours = 8;
 
     /// <summary>Bing HPImageArchive allows at most 8 images per request.</summary>
     public const int HistoryCount = 8;
@@ -509,15 +509,15 @@ public sealed class AppState : INotifyPropertyChanged
         _timer?.Stop();
         _timer = new System.Windows.Threading.DispatcherTimer
         {
-            Interval = TimeSpan.FromMinutes(CheckIntervalMinutes),
+            Interval = TimeSpan.FromHours(CheckIntervalHours),
         };
         _timer.Tick += (_, _) =>
         {
-            NextCheckAt = DateTime.Now.AddMinutes(CheckIntervalMinutes);
+            NextCheckAt = DateTime.Now.AddHours(CheckIntervalHours);
             if (AutoRefreshEnabled) Refresh(force: false);
         };
         _timer.Start();
-        NextCheckAt = DateTime.Now.AddMinutes(CheckIntervalMinutes);
+        NextCheckAt = DateTime.Now.AddHours(CheckIntervalHours);
     }
 
     private void OnPowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
