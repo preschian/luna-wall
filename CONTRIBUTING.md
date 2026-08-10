@@ -37,6 +37,33 @@ xcodebuild -scheme LunaWall -configuration Release -derivedDataPath build
 open build/Build/Products/Release/LunaWall.app
 ```
 
+#### Package DMG (local)
+
+Apple Silicon (`arm64`) only. Creates a drag-to-Applications disk image:
+
+```bash
+cd LunaWall
+xcodegen generate
+xcodebuild -scheme LunaWall -configuration Release -derivedDataPath build \
+  -arch arm64 CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=YES
+mkdir -p dmg-root
+cp -R build/Build/Products/Release/LunaWall.app dmg-root/
+ln -sf /Applications dmg-root/Applications
+hdiutil create -volname "LunaWall" -srcfolder dmg-root \
+  -ov -format UDZO LunaWall-macos-arm64.dmg
+```
+
+#### Release (macOS)
+
+Push a version tag; GitHub Actions builds `LunaWall-macos-arm64.dmg` and attaches it to the release (same tag as Windows):
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Unsigned downloads trip Gatekeeper; users can **right-click the app → Open** the first time.
+
 ### Windows
 
 ```powershell
