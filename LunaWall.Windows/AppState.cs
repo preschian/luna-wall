@@ -11,6 +11,10 @@ public sealed class AppState : INotifyPropertyChanged
     private const string LastAppliedDateKey = "lastAppliedDate";
     private const string AutoRefreshEnabledKey = "autoRefreshEnabled";
     private const string PinnedHashKey = "pinnedHash";
+    private const string RetentionDaysKey = "retentionDays";
+
+    /// <summary>Minutes between automatic checks.</summary>
+    private const int CheckIntervalMinutes = 30;
 
     /// <summary>Bing HPImageArchive allows at most 8 images per request.</summary>
     public const int HistoryCount = 8;
@@ -41,6 +45,8 @@ public sealed class AppState : INotifyPropertyChanged
     private bool _autoRefreshEnabled;
     private string? _pinnedHash;
     private bool _launchAtLoginEnabled;
+    private int _retentionDays;
+    private DateTime? _nextCheckAt;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -110,6 +116,29 @@ public sealed class AppState : INotifyPropertyChanged
         private set => SetField(ref _launchAtLoginEnabled, value);
     }
 
+    /// <summary>Days of catalog history to keep; 0 keeps everything.</summary>
+    public int RetentionDays
+    {
+        get => _retentionDays;
+        set
+        {
+            if (!SetField(ref _retentionDays, value)) return;
+            AppSettings.Set(RetentionDaysKey, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            var trimmed = LibraryStore.Trim(value);
+            RecentImages = trimmed;
+            _wallpaper.Evict(trimmed);
+        }
+    }
+
+    /// <summary>Wall-clock time of the next automatic check, or null when the scheduler is idle.</summary>
+    public DateTime? NextCheckAt
+    {
+        get => _nextCheckAt;
+        private set => SetField(ref _nextCheckAt, value);
+    }
+
+    public string StorageDirectory => _wallpaper.StorageDirectory;
+
     public AppState()
     {
         if (!AppSettings.Has(AutoRefreshEnabledKey))
@@ -118,6 +147,11 @@ public sealed class AppState : INotifyPropertyChanged
         _autoRefreshEnabled = AppSettings.GetBool(AutoRefreshEnabledKey, true);
         _pinnedHash = AppSettings.GetString(PinnedHashKey);
         _launchAtLoginEnabled = LaunchAtLoginService.IsEnabled;
+        _retentionDays = int.TryParse(AppSettings.GetString(RetentionDaysKey), out var days) ? days : 0;
+        _recentImages = LibraryStore.Load();
+        // Show the last applied image immediately instead of an empty hero while Bing is fetched.
+        var lastHash = AppSettings.GetString(LastAppliedHashKey);
+        _currentImage = _recentImages.FirstOrDefault(i => i.Hash == lastHash);
     }
 
     public void Start()
@@ -133,6 +167,7 @@ public sealed class AppState : INotifyPropertyChanged
     {
         _timer?.Stop();
         _timer = null;
+        NextCheckAt = null;
         CancelOperations();
         IsRefreshing = false;
         IsWarmingLibrary = false;
@@ -141,13 +176,44 @@ public sealed class AppState : INotifyPropertyChanged
     }
 
     public void Refresh(bool force) =>
-        BeginOperation(ct => PerformOperationAsync(force, TargetPolicy.FollowPin, exact: null, ct));
+        BeginOperation(ct => PerformOperationAsync(force, TargetPolicy.FollowPin, exact: null, forcePin: false, ct));
 
-    public void ApplyImage(BingImage image) =>
-        BeginOperation(ct => PerformOperationAsync(force: true, TargetPolicy.Exact, image, ct));
+    /// <param name="pin">Hold this image even when it happens to be today's.</param>
+    public void ApplyImage(BingImage image, bool pin = false) =>
+        BeginOperation(ct => PerformOperationAsync(force: true, TargetPolicy.Exact, image, pin, ct));
 
     public void FollowToday() =>
-        BeginOperation(ct => PerformOperationAsync(force: true, TargetPolicy.ForceToday, exact: null, ct));
+        BeginOperation(ct => PerformOperationAsync(force: true, TargetPolicy.ForceToday, exact: null, forcePin: false, ct));
+
+    /// <summary>Holds the current wallpaper in place so auto-refresh stops following today.</summary>
+    public void PinCurrent()
+    {
+        if (CurrentImage is { } image) PinnedHash = image.Hash;
+    }
+
+    public void RevealInExplorer(string path)
+    {
+        var target = File.Exists(path) ? $"/select,\"{path}\"" : $"\"{StorageDirectory}\"";
+        Directory.CreateDirectory(StorageDirectory);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", target));
+    }
+
+    /// <summary>Frees space by deleting full-resolution files over a year old; thumbnails stay.</summary>
+    public void CleanUpCache()
+    {
+        try
+        {
+            _wallpaper.DeleteFullResolutionOlderThan(DateTime.Today.AddYears(-1), CurrentImage, RecentImages);
+            LastError = null;
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+        }
+        OnPropertyChanged(nameof(RecentImages));
+    }
+
+    public (int Files, long Bytes) CacheUsage() => _wallpaper.CacheUsage();
 
     public string FilePath(BingImage image) => _wallpaper.LocalFilePath(image);
 
@@ -218,6 +284,7 @@ public sealed class AppState : INotifyPropertyChanged
         bool force,
         TargetPolicy policy,
         BingImage? exact,
+        bool forcePin,
         CancellationToken cancellationToken)
     {
         if (!force && _earliestRetryAt is { } earliest && DateTime.UtcNow < earliest)
@@ -239,7 +306,7 @@ public sealed class AppState : INotifyPropertyChanged
 
             var today = images[0];
             // Grow Recent beyond Bing's 8-day window by keeping every day we've fetched.
-            var library = LibraryStore.MergeAndSave(images);
+            var library = LibraryStore.MergeAndSave(images, RetentionDays);
             var pinned = PinnedHash;
             var target = ResolveTarget(library, today, pinned, policy, exact);
             var lastHash = AppSettings.GetString(LastAppliedHashKey);
@@ -253,7 +320,7 @@ public sealed class AppState : INotifyPropertyChanged
                 RunOnUi(() =>
                 {
                     CurrentImage = target;
-                    ApplyPinPolicy(target, today);
+                    ApplyPinPolicy(target, today, forcePin);
                     StatusMessage = PinnedHash is null
                         ? "Already up to date"
                         : $"Pinned · {target.DisplayDate}";
@@ -261,7 +328,7 @@ public sealed class AppState : INotifyPropertyChanged
             }
             else
             {
-                await ApplyWallpaperAsync(target, today, cancellationToken).ConfigureAwait(false);
+                await ApplyWallpaperAsync(target, today, forcePin, cancellationToken).ConfigureAwait(false);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -303,10 +370,14 @@ public sealed class AppState : INotifyPropertyChanged
         };
     }
 
-    private void ApplyPinPolicy(BingImage applied, BingImage today) =>
-        PinnedHash = applied.Hash == today.Hash ? null : applied.Hash;
+    private void ApplyPinPolicy(BingImage applied, BingImage today, bool forcePin) =>
+        PinnedHash = forcePin || applied.Hash != today.Hash ? applied.Hash : null;
 
-    private async Task ApplyWallpaperAsync(BingImage image, BingImage today, CancellationToken cancellationToken)
+    private async Task ApplyWallpaperAsync(
+        BingImage image,
+        BingImage today,
+        bool forcePin,
+        CancellationToken cancellationToken)
     {
         var filePath = _wallpaper.LocalFilePath(image);
         if (!File.Exists(filePath))
@@ -326,7 +397,7 @@ public sealed class AppState : INotifyPropertyChanged
         RunOnUi(() =>
         {
             CurrentImage = image;
-            ApplyPinPolicy(image, today);
+            ApplyPinPolicy(image, today, forcePin);
             StatusMessage = PinnedHash is null
                 ? $"Updated · {image.DisplayDate}"
                 : $"Pinned · {image.DisplayDate}";
@@ -438,13 +509,15 @@ public sealed class AppState : INotifyPropertyChanged
         _timer?.Stop();
         _timer = new System.Windows.Threading.DispatcherTimer
         {
-            Interval = TimeSpan.FromMinutes(30),
+            Interval = TimeSpan.FromMinutes(CheckIntervalMinutes),
         };
         _timer.Tick += (_, _) =>
         {
+            NextCheckAt = DateTime.Now.AddMinutes(CheckIntervalMinutes);
             if (AutoRefreshEnabled) Refresh(force: false);
         };
         _timer.Start();
+        NextCheckAt = DateTime.Now.AddMinutes(CheckIntervalMinutes);
     }
 
     private void OnPowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
