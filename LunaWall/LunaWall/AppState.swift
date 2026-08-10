@@ -126,9 +126,26 @@ final class AppState: ObservableObject {
         }
     }
 
-    func openCopyrightPage() {
-        guard let url = currentImage?.infoURL else { return }
+    func openCopyrightPage(for image: BingImage? = nil) {
+        guard let url = (image ?? currentImage)?.infoURL else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    var cacheDirectory: URL { wallpaperService.storageDirectory }
+
+    /// Reveals the cached file for `image`, falling back to the cache folder itself.
+    func revealInFinder(_ image: BingImage?) {
+        let fileURL = image.map { wallpaperService.localFileURL(for: $0) }
+        if let fileURL, FileManager.default.fileExists(atPath: fileURL.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+        } else {
+            NSWorkspace.shared.open(cacheDirectory)
+        }
+    }
+
+    /// Holds the applied image on the desktop even once Bing rolls over to a new day.
+    func pinCurrent() {
+        pinnedHash = currentImage?.hsh
     }
 
     private func beginOperation(_ work: @escaping @MainActor (Int) async -> Void) {
@@ -217,7 +234,12 @@ final class AppState: ObservableObject {
     }
 
     private func applyPinPolicy(applied: BingImage, today: BingImage) {
-        pinnedHash = applied.hsh == today.hsh ? nil : applied.hsh
+        // Past days always pin; today only stays pinned when the user pinned it explicitly.
+        if applied.hsh == today.hsh, pinnedHash != applied.hsh {
+            pinnedHash = nil
+        } else {
+            pinnedHash = applied.hsh
+        }
     }
 
     private func applyWallpaper(_ image: BingImage, today: BingImage, generation: Int) async throws {

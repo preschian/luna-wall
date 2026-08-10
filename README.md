@@ -23,7 +23,7 @@ A menu-bar-only panel was too constrained for reliable observation, scrolling, a
 - On Windows, each refresh merges Bing’s 8-day API window into a local catalog so Recent is not capped at 8
 - Applies it as the desktop wallpaper
 - Auto-checks every 30 minutes (and after wake / resume)
-- Pin a past day to keep it; otherwise auto-refresh follows today
+- Pin a day (past or today) to keep it; otherwise auto-refresh follows today
 - Optional launch at login
 - Menu bar / tray shortcuts for refresh, follow-today, and opening the window
 - Caches downloaded images in `~/Downloads/luna-wall` (macOS) or `%USERPROFILE%\Downloads\luna-wall` (Windows)

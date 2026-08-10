@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		030242CF067E74DB84648D66 /* LibraryThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8741CC13475BBE0253D1B38E /* LibraryThumbnail.swift */; };
+		1DE284F9D2A28351959F6A59 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10FA4BEC0ADAD3B71A01BECA /* Theme.swift */; };
 		262F330CF7C7181767FC062F /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */; };
 		38CD846CAC47520563677DA6 /* OpenMainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B062689486BD836CACF8DC1 /* OpenMainWindow.swift */; };
 		694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DB8612458EAEE386E83D97 /* MenuBarView.swift */; };
@@ -23,6 +24,7 @@
 
 /* Begin PBXFileReference section */
 		01365E7BEA105CBCE3735177 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		10FA4BEC0ADAD3B71A01BECA /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		15DB8612458EAEE386E83D97 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		1DFC80869CF29F80ACBF12CC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4CB67B9A4AE0469AD487F71C /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 				7F04EF1EE1DE65284D2B8EE2 /* MainWindowView.swift */,
 				15DB8612458EAEE386E83D97 /* MenuBarView.swift */,
 				6B062689486BD836CACF8DC1 /* OpenMainWindow.swift */,
+				10FA4BEC0ADAD3B71A01BECA /* Theme.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -177,6 +180,7 @@
 				69F9C0649DFBFB3E72AAD986 /* MainWindowView.swift in Sources */,
 				694B1D8CBCB6EEB37609693E /* MenuBarView.swift in Sources */,
 				38CD846CAC47520563677DA6 /* OpenMainWindow.swift in Sources */,
+				1DE284F9D2A28351959F6A59 /* Theme.swift in Sources */,
 				75BA62A156A85C2C28C1EA4F /* WallpaperService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
