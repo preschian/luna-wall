@@ -303,7 +303,7 @@
                       VerticalScrollBarVisibility="Auto" Padding="34,30">
             <StackPanel MaxWidth="720" HorizontalAlignment="Left">
                 <TextBlock Text="Settings" FontSize="24" FontWeight="SemiBold" />
-                <TextBlock Text="Auto-checks every 30 minutes and after your PC wakes." FontSize="13"
+                <TextBlock Text="Checks on launch, every 8 hours, and after your PC wakes." FontSize="13"
                            Foreground="{StaticResource Ink45}" Margin="0,4,0,26" />
 
                 <Border CornerRadius="9,9,0,0" Background="{StaticResource Field}" BorderBrush="{StaticResource Hairline}"
