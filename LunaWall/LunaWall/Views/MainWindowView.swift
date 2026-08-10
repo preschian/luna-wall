@@ -13,6 +13,7 @@ struct MainWindowView: View {
     @State private var detailIndex: Int?
     @State private var query = ""
     @State private var pinnedOnly = false
+    @State private var cacheSummary = "Measuring cache…"
 
     private let gridColumns = [GridItem(.adaptive(minimum: 150, maximum: 240), spacing: 14)]
 
@@ -84,12 +85,11 @@ struct MainWindowView: View {
 
             Spacer(minLength: 12)
 
-            Button("Refresh") { appState.refresh(force: true) }
+            ChromeButton(title: "Refresh", glass: true) { appState.refresh(force: true) }
                 .disabled(appState.isRefreshing)
-            Button("Library") { pane = .library }
-            Button("Settings") { pane = .settings }
+            ChromeButton(title: "Library", glass: true) { pane = .library }
+            ChromeButton(title: "Settings", glass: true) { pane = .settings }
         }
-        .buttonStyle(GhostButtonStyle(glass: true))
         .padding(.horizontal, 24)
         .padding(.top, 20)
     }
@@ -128,16 +128,15 @@ struct MainWindowView: View {
 
             HStack(spacing: 10) {
                 if appState.isPinned {
-                    Button("Follow today") { appState.followToday() }
-                        .buttonStyle(GhostButtonStyle(size: 13))
+                    ChromeButton(title: "Follow today", size: 13) { appState.followToday() }
                         .disabled(appState.isRefreshing)
                 } else {
                     Button("Pin this day") { appState.pinCurrent() }
                         .buttonStyle(AmberButtonStyle())
+                        .accessibilityLabel("Pin this day")
                         .disabled(appState.currentImage == nil)
                 }
-                Button("View full") { detailIndex = currentIndex ?? 0 }
-                    .buttonStyle(GhostButtonStyle(size: 13))
+                ChromeButton(title: "View full", size: 13) { detailIndex = currentIndex ?? 0 }
                     .disabled(appState.recentImages.isEmpty)
             }
         }
@@ -148,18 +147,19 @@ struct MainWindowView: View {
     private var recentStrip: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Last \(appState.recentImages.count) days")
+                Text("Last \(min(appState.recentImages.count, 8)) days")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
                 Spacer()
                 Button {
                     pane = .library
                 } label: {
-                    Text("BING ARCHIVE · \(appState.recentImages.count) IMAGES →")
+                    Text("LOCAL CATALOG · \(appState.recentImages.count) IMAGES →")
                         .font(Theme.mono(11))
                         .foregroundStyle(.white.opacity(0.42))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Open library")
             }
 
             if appState.recentImages.isEmpty {
@@ -169,7 +169,7 @@ struct MainWindowView: View {
                     .frame(height: 70)
             } else {
                 HStack(alignment: .top, spacing: 10) {
-                    ForEach(Array(appState.recentImages.enumerated()), id: \.element.id) { index, image in
+                    ForEach(Array(appState.recentImages.prefix(8).enumerated()), id: \.element.id) { index, image in
                         tile(image, index: index, style: .compact)
                     }
                 }
@@ -261,6 +261,8 @@ struct MainWindowView: View {
                 .background(active ? Color.white.opacity(0.12) : .clear)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 
     // MARK: - Settings
@@ -304,27 +306,45 @@ struct MainWindowView: View {
                         }
                         Divider().overlay(Theme.hairline)
                         settingRow(
+                            title: "Keep the local catalog",
+                            subtitle: "Bing serves 8 days; LunaWall keeps every day it has seen."
+                        ) {
+                            HStack(spacing: 0) {
+                                chip("90 days", active: appState.retentionDays == 90) { appState.retentionDays = 90 }
+                                chip("Forever", active: appState.retentionDays == 0) { appState.retentionDays = 0 }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.14)))
+                        }
+                        Divider().overlay(Theme.hairline)
+                        settingRow(
                             title: "Cache folder",
                             subtitle: appState.cacheDirectory.path,
                             monoSubtitle: true
                         ) {
-                            Button("Open") { appState.revealInFinder(nil) }
-                                .buttonStyle(GhostButtonStyle())
+                            ChromeButton(title: "Open") { appState.revealInFinder(nil) }
                         }
                     }
                     .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 9))
                     .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.07)))
 
-                    Text("Bing serves 8 days; LunaWall caches that window and drops files once they leave it.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.5))
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 9)
-                                .strokeBorder(.white.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        )
-                        .padding(.top, 26)
+                    HStack(spacing: 14) {
+                        Text(cacheSummary)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ChromeButton(title: "Clean up") {
+                            appState.cleanUpCache()
+                            cacheSummary = appState.cacheSummary()
+                        }
+                    }
+                    .padding(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9)
+                            .strokeBorder(.white.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    )
+                    .padding(.top, 26)
+                    .task { cacheSummary = appState.cacheSummary() }
                 }
                 .padding(.horizontal, 34)
                 .padding(.vertical, 30)
@@ -378,6 +398,7 @@ struct MainWindowView: View {
                 .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.white.opacity(0.12)))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Show today")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(appState.currentImage?.displayTitle ?? "Loading…")
@@ -398,14 +419,13 @@ struct MainWindowView: View {
             Spacer(minLength: 12)
 
             HStack(spacing: 8) {
-                Button("Today") { pane = .home }
+                ChromeButton(title: "Today") { pane = .home }
                 if alternate.1 == .settings {
-                    Button("Library") { pane = .library }
+                    ChromeButton(title: "Library") { pane = .library }
                 } else {
-                    Button("Settings") { pane = .settings }
+                    ChromeButton(title: "Settings") { pane = .settings }
                 }
             }
-            .buttonStyle(GhostButtonStyle())
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
@@ -471,6 +491,7 @@ struct MainWindowView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(image.displayTitle), \(image.displayDate)")
         .help(isCurrent ? "Currently applied" : "Open \(image.displayTitle)")
     }
 
@@ -493,16 +514,16 @@ struct MainWindowView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
                 .overlay(alignment: .topTrailing) {
-                    circleButton("✕") { detailIndex = nil }
+                    circleButton("✕", label: "Close") { detailIndex = nil }
                         .padding(14)
                 }
                 .overlay(alignment: .leading) {
-                    circleButton("‹") { step(-1) }
+                    circleButton("‹", label: "Previous day") { step(-1) }
                         .padding(.leading, 14)
                         .disabled(detailIndex == 0)
                 }
                 .overlay(alignment: .trailing) {
-                    circleButton("›") { step(1) }
+                    circleButton("›", label: "Next day") { step(1) }
                         .padding(.trailing, 14)
                         .disabled(detailIndex == appState.recentImages.count - 1)
                 }
@@ -530,13 +551,12 @@ struct MainWindowView: View {
                             pane = .home
                         }
                         .buttonStyle(AmberButtonStyle())
+                        .accessibilityLabel("Set as wallpaper")
                         .disabled(appState.isRefreshing)
 
-                        Button("Open folder") { appState.revealInFinder(image) }
-                            .buttonStyle(GhostButtonStyle(size: 13))
+                        ChromeButton(title: "Open folder", size: 13) { appState.revealInFinder(image) }
                         if image.infoURL != nil {
-                            Button("About") { appState.openCopyrightPage(for: image) }
-                                .buttonStyle(GhostButtonStyle(size: 13))
+                            ChromeButton(title: "About", size: 13) { appState.openCopyrightPage(for: image) }
                         }
                     }
                 }
@@ -551,7 +571,7 @@ struct MainWindowView: View {
         }
     }
 
-    private func circleButton(_ glyph: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(_ glyph: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(glyph)
                 .font(.system(size: 13))
@@ -560,6 +580,7 @@ struct MainWindowView: View {
                 .background(.ultraThinMaterial, in: Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private func step(_ delta: Int) {

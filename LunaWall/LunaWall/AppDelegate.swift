@@ -8,6 +8,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var appState: AppState { Self.sharedState }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        LibraryStore.selfCheck()
+        #endif
         Self.sharedState.start()
     }
 

@@ -19,8 +19,9 @@ A menu-bar-only panel was too constrained for reliable observation, scrolling, a
 ## Features
 
 - Fetches today’s Bing wallpaper in UHD
-- Browse and apply Bing wallpapers in the main window (Windows keeps a growing local history; macOS shows Bing’s last 8 days)
-- On Windows, each refresh merges Bing’s 8-day API window into a local catalog so Recent is not capped at 8
+- Browse and apply Bing wallpapers in the main window, with a growing local catalog on both platforms
+- Each refresh merges Bing’s 8-day API window into that catalog, so history is not capped at 8 days
+- Optional 90-day retention, cache usage summary, and a clean-up that keeps thumbnails
 - Applies it as the desktop wallpaper
 - Auto-checks every 30 minutes (and after wake / resume)
 - Pin a day (past or today) to keep it; otherwise auto-refresh follows today

@@ -40,6 +40,21 @@ struct GhostButtonStyle: ButtonStyle {
     }
 }
 
+/// Ghost button that also names itself for VoiceOver — a custom `ButtonStyle` alone
+/// leaves `AXTitle` empty, so every chrome button would read as just "button".
+struct ChromeButton: View {
+    let title: String
+    var glass = false
+    var size: CGFloat = 12
+    let action: () -> Void
+
+    var body: some View {
+        Button(title, action: action)
+            .buttonStyle(GhostButtonStyle(glass: glass, size: size))
+            .accessibilityLabel(title)
+    }
+}
+
 struct AmberButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

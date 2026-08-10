@@ -4,7 +4,7 @@ struct BingArchiveResponse: Decodable, Sendable {
     let images: [BingImage]
 }
 
-struct BingImage: Decodable, Identifiable, Sendable, Equatable {
+struct BingImage: Codable, Identifiable, Sendable, Equatable {
     let startdate: String
     let urlbase: String
     let copyright: String

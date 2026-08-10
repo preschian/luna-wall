@@ -9,6 +9,7 @@ final class AppState: ObservableObject {
         static let lastAppliedDate = "lastAppliedDate"
         static let autoRefreshEnabled = "autoRefreshEnabled"
         static let pinnedHash = "pinnedHash"
+        static let retentionDays = "retentionDays"
     }
 
     private enum TargetPolicy: Sendable {
@@ -34,6 +35,15 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(pinnedHash, forKey: DefaultsKey.pinnedHash) }
     }
     @Published var launchAtLoginEnabled: Bool
+    /// Days of catalog history to keep; 0 keeps everything.
+    @Published var retentionDays: Int {
+        didSet {
+            guard retentionDays != oldValue else { return }
+            UserDefaults.standard.set(retentionDays, forKey: DefaultsKey.retentionDays)
+            recentImages = LibraryStore.trim(retentionDays: retentionDays)
+            wallpaperService.evict(except: recentImages)
+        }
+    }
 
     var isPinned: Bool { pinnedHash != nil }
 
@@ -57,6 +67,8 @@ final class AppState: ObservableObject {
         autoRefreshEnabled = defaults.bool(forKey: DefaultsKey.autoRefreshEnabled)
         pinnedHash = defaults.string(forKey: DefaultsKey.pinnedHash)
         launchAtLoginEnabled = LaunchAtLoginService.isEnabled
+        retentionDays = defaults.integer(forKey: DefaultsKey.retentionDays)
+        recentImages = LibraryStore.load()
     }
 
     func start() {
@@ -148,6 +160,24 @@ final class AppState: ObservableObject {
         pinnedHash = currentImage?.hsh
     }
 
+    /// "1.4 GB cached across 214 images. …" — the settings footer.
+    func cacheSummary() -> String {
+        let usage = wallpaperService.cacheUsage()
+        let size = ByteCountFormatter.string(fromByteCount: usage.bytes, countStyle: .file)
+        return "\(size) cached across \(recentImages.count) images (\(usage.files) files). "
+            + "Thumbnails are kept; full-resolution files older than a year can be re-downloaded on demand."
+    }
+
+    /// Frees space by deleting full-resolution files over a year old; thumbnails stay.
+    func cleanUpCache() {
+        wallpaperService.deleteFullResolution(
+            olderThan: LibraryStore.dateKey(daysAgo: 365),
+            keep: currentImage,
+            library: recentImages
+        )
+        lastError = nil
+    }
+
     private func beginOperation(_ work: @escaping @MainActor (Int) async -> Void) {
         operationTask?.cancel()
         libraryTask?.cancel()
@@ -181,13 +211,14 @@ final class AppState: ObservableObject {
 
             consecutiveRefreshFailures = 0
             earliestRetryAt = nil
-            recentImages = images
+            // Bing only serves 8 days; merge them into the catalog so the library keeps growing.
+            recentImages = LibraryStore.mergeAndSave(images, retentionDays: retentionDays)
 
             guard let today = images.first else {
                 throw BingWallpaperError.emptyArchive
             }
 
-            let target = Self.resolveTarget(images: images, today: today, pinnedHash: pinnedHash, policy: policy)
+            let target = Self.resolveTarget(images: recentImages, today: today, pinnedHash: pinnedHash, policy: policy)
             let lastHash = UserDefaults.standard.string(forKey: DefaultsKey.lastAppliedHash)
             let fileURL = wallpaperService.localFileURL(for: target)
             let cachePresent = FileManager.default.fileExists(atPath: fileURL.path)
@@ -335,7 +366,8 @@ final class AppState: ObservableObject {
         }
 
         guard generation == libraryGeneration else { return }
-        wallpaperService.evict(except: images)
+        // Keep every catalog day; only orphan files outside the catalog are dropped.
+        wallpaperService.evict(except: recentImages)
 
         if pinnedHash == nil {
             statusMessage = currentImage.map { "Updated · \($0.displayDate)" } ?? "Ready"
