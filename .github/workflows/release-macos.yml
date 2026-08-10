@@ -1,0 +1,46 @@
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build arm64 Release app
+        working-directory: LunaWall
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          xcodegen generate
+          xcodebuild -scheme LunaWall -configuration Release \
+            -derivedDataPath build \
+            -arch arm64 \
+            CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=YES \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$VERSION"
+
+      - name: Create DMG
+        working-directory: LunaWall
+        run: |
+          set -euo pipefail
+          mkdir dmg-root
+          cp -R build/Build/Products/Release/LunaWall.app dmg-root/
+          ln -s /Applications dmg-root/Applications
+          hdiutil create -volname "LunaWall" -srcfolder dmg-root \
+            -ov -format UDZO ../LunaWall-macos-arm64.dmg
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: LunaWall-macos-arm64.dmg
+          generate_release_notes: true
