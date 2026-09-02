@@ -210,6 +210,7 @@ public sealed class MainWindowModel : INotifyPropertyChanged
     public string PinLabel => _state.IsPinned ? "Follow today" : "Pin this day";
     public Brush PinBackground => _state.IsPinned ? Brushes.Transparent : Resource("Amber");
     public Brush PinBorder => Resource(_state.IsPinned ? "Edge" : "Amber");
+    public Thickness PinBorderThickness => new(_state.IsPinned ? 1 : 0);
     public Brush PinForeground => _state.IsPinned ? Resource("Ink") : Resource("AmberInk");
 
     public string CatalogSummary => $"LOCAL CATALOG · {_state.RecentImages.Count} IMAGES →";
@@ -371,7 +372,7 @@ public sealed class MainWindowModel : INotifyPropertyChanged
                  {
                      nameof(CanRefresh), nameof(HasCurrent), nameof(RefreshLabel), nameof(StatusBrush),
                      nameof(StatusLabel), nameof(StatusLine), nameof(PinLabel), nameof(PinBackground),
-                     nameof(PinBorder), nameof(PinForeground), nameof(HeroTitle), nameof(HeroCopyright),
+                     nameof(PinBorder), nameof(PinBorderThickness), nameof(PinForeground), nameof(HeroTitle), nameof(HeroCopyright),
                      nameof(HeroDate), nameof(CatalogSummary), nameof(AllChipLabel), nameof(PinnedChipLabel),
                      nameof(AutoRefreshEnabled), nameof(LastError), nameof(ErrorVisibility), nameof(CacheSummary),
                      nameof(EmptyNote), nameof(RetainForever), nameof(RetainNinetyDays), nameof(DetailPinLabel),

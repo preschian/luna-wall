@@ -51,9 +51,18 @@
                         Cursor="Hand" Click="GoHome_Click">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border CornerRadius="5" ClipToBounds="True" Background="{StaticResource Tile}"
-                                    BorderBrush="{StaticResource Edge}" BorderThickness="1">
-                                <Image Source="{Binding HeroThumbnail}" Stretch="UniformToFill" />
+                            <Border CornerRadius="5" Background="{StaticResource Tile}"
+                                    BorderBrush="{StaticResource Edge}" BorderThickness="1" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.OpacityMask>
+                                        <VisualBrush>
+                                            <VisualBrush.Visual>
+                                                <Border Width="74" Height="42" CornerRadius="5" Background="Black" />
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Grid.OpacityMask>
+                                    <Image Source="{Binding HeroThumbnail}" Stretch="UniformToFill" />
+                                </Grid>
                             </Border>
                         </ControlTemplate>
                     </Button.Template>
@@ -127,6 +136,7 @@
                         <Button Style="{StaticResource Ghost}" Content="{Binding PinLabel}" Margin="0,0,10,0"
                                 Padding="18,10" FontSize="13" FontWeight="SemiBold"
                                 Background="{Binding PinBackground}" BorderBrush="{Binding PinBorder}"
+                                BorderThickness="{Binding PinBorderThickness}"
                                 Foreground="{Binding PinForeground}"
                                 IsEnabled="{Binding CanRefresh}" Click="TogglePin_Click" />
                         <Button Style="{StaticResource Ghost}" Content="View full" Padding="18,10" FontSize="13"
@@ -171,13 +181,23 @@
                                     </Button.Template>
                                     <StackPanel>
                                         <!-- Viewbox on a 160x90 child is the cheapest 16:9 box WPF has. -->
-                                        <Border CornerRadius="6" ClipToBounds="True" Background="{StaticResource Tile}"
-                                                BorderBrush="{Binding BorderBrush}" BorderThickness="{Binding BorderThickness}">
-                                            <Viewbox Stretch="Uniform">
-                                                <Grid Width="160" Height="90">
-                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                                                </Grid>
-                                            </Viewbox>
+                                        <Border CornerRadius="6" Background="{StaticResource Tile}"
+                                                BorderBrush="{Binding BorderBrush}" BorderThickness="{Binding BorderThickness}"
+                                                SnapsToDevicePixels="True">
+                                            <Grid>
+                                                <Grid.OpacityMask>
+                                                    <VisualBrush>
+                                                        <VisualBrush.Visual>
+                                                            <Border Width="160" Height="90" CornerRadius="6" Background="Black" />
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Grid.OpacityMask>
+                                                <Viewbox Stretch="Uniform">
+                                                    <Grid Width="160" Height="90">
+                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                                    </Grid>
+                                                </Viewbox>
+                                            </Grid>
                                         </Border>
                                         <TextBlock Style="{StaticResource Meta}" FontSize="10" Text="{Binding ShortDate}"
                                                    Foreground="{Binding DateBrush}" Margin="0,7,0,0" />
@@ -217,8 +237,8 @@
                             </Grid>
                         </Grid>
                     </Border>
-                    <Border Grid.Column="1" CornerRadius="8" ClipToBounds="True" BorderBrush="{StaticResource Edge}"
-                            BorderThickness="1">
+                    <Border Grid.Column="1" CornerRadius="8" BorderBrush="{StaticResource Edge}"
+                            BorderThickness="1" Padding="2" SnapsToDevicePixels="True">
                         <StackPanel Orientation="Horizontal">
                             <RadioButton Style="{StaticResource Chip}" GroupName="filter" Content="{Binding AllChipLabel}"
                                          IsChecked="{Binding ShowAll}" />
@@ -263,21 +283,31 @@
                                                         </ControlTemplate>
                                                     </Button.Template>
                                                     <StackPanel>
-                                                        <Border CornerRadius="7" ClipToBounds="True" Background="{StaticResource Tile}"
-                                                                BorderBrush="{Binding BorderBrush}" BorderThickness="{Binding BorderThickness}">
-                                                            <Viewbox Stretch="Uniform">
-                                                                <Grid Width="160" Height="90">
-                                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                                                                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6"
-                                                                            CornerRadius="4" Background="#990A0C10" Padding="6,2">
-                                                                        <TextBlock Style="{StaticResource Meta}" FontSize="10"
-                                                                                   Text="{Binding DayNumber}" Foreground="#D9FFFFFF" />
-                                                                    </Border>
-                                                                    <TextBlock Style="{StaticResource Meta}" Text="{Binding PinMark}"
-                                                                               Foreground="{StaticResource Amber}" FontSize="10"
-                                                                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="7,6,7,0" />
-                                                                </Grid>
-                                                            </Viewbox>
+                                                        <Border CornerRadius="7" Background="{StaticResource Tile}"
+                                                                BorderBrush="{Binding BorderBrush}" BorderThickness="{Binding BorderThickness}"
+                                                                SnapsToDevicePixels="True">
+                                                            <Grid>
+                                                                <Grid.OpacityMask>
+                                                                    <VisualBrush>
+                                                                        <VisualBrush.Visual>
+                                                                            <Border Width="160" Height="90" CornerRadius="7" Background="Black" />
+                                                                        </VisualBrush.Visual>
+                                                                    </VisualBrush>
+                                                                </Grid.OpacityMask>
+                                                                <Viewbox Stretch="Uniform">
+                                                                    <Grid Width="160" Height="90">
+                                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6"
+                                                                                CornerRadius="4" Background="#990A0C10" Padding="6,2">
+                                                                            <TextBlock Style="{StaticResource Meta}" FontSize="10"
+                                                                                       Text="{Binding DayNumber}" Foreground="#D9FFFFFF" />
+                                                                        </Border>
+                                                                        <TextBlock Style="{StaticResource Meta}" Text="{Binding PinMark}"
+                                                                                   Foreground="{StaticResource Amber}" FontSize="10"
+                                                                                   HorizontalAlignment="Right" VerticalAlignment="Top" Margin="7,6,7,0" />
+                                                                    </Grid>
+                                                                </Viewbox>
+                                                            </Grid>
                                                         </Border>
                                                         <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="Medium"
                                                                    Foreground="{StaticResource Ink72}" TextWrapping="Wrap"
@@ -352,13 +382,14 @@
                             <TextBlock Text="Bing serves 8 days; LunaWall keeps every day it has seen." FontSize="12"
                                        Foreground="{StaticResource Ink45}" Margin="0,3,0,0" TextWrapping="Wrap" />
                         </StackPanel>
-                        <Border Grid.Column="1" CornerRadius="7" ClipToBounds="True" BorderBrush="{StaticResource Edge}"
-                                BorderThickness="1" VerticalAlignment="Center" Margin="20,0,0,0">
+                        <Border Grid.Column="1" CornerRadius="8" BorderBrush="{StaticResource Edge}"
+                                BorderThickness="1" VerticalAlignment="Center" Margin="20,0,0,0"
+                                Padding="2" SnapsToDevicePixels="True">
                             <StackPanel Orientation="Horizontal">
                                 <RadioButton Style="{StaticResource Chip}" GroupName="retention" Content="90 days"
-                                             Padding="12,6" IsChecked="{Binding RetainNinetyDays}" />
+                                             IsChecked="{Binding RetainNinetyDays}" />
                                 <RadioButton Style="{StaticResource Chip}" GroupName="retention" Content="Forever"
-                                             Padding="12,6" IsChecked="{Binding RetainForever}" />
+                                             IsChecked="{Binding RetainForever}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -429,7 +460,7 @@
                     </Grid>
                     <Grid Background="#FF1A1D25" ClipToBounds="True">
                         <Image Source="{Binding DetailImage}" Stretch="UniformToFill" />
-                        <Button Style="{StaticResource Round}" Width="30" Height="30" Content="&#xE711;"
+                        <Button Style="{StaticResource Round}" Content="&#xE711;"
                                 FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11" HorizontalAlignment="Right"
                                 VerticalAlignment="Top" Margin="14" Click="CloseDetail_Click" />
                         <Button Style="{StaticResource Round}" Content="&#xE76B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
